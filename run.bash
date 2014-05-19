@@ -220,18 +220,21 @@ function install_gandalf {
     sudo rm /etc/gandalf.conf.old
     sudo stop gandalf-server 1>&2 2>/dev/null || true
     sudo start gandalf-server
-    local gitaddr=$(running_addr git-daemon)
-    if [[ $gitaddr == "" ]]; then
-        echo "Error: Couldn't find git-daemon addr, please check your logs"
-        exit 1
-    fi
-    echo "git-daemon found running at $gitaddr"
     local gandalfaddr=$(running_addr gandalf)
     if [[ $gandalfaddr == "" ]]; then
         echo "Error: Couldn't find gandalf addr, please check /var/log/upstart/gandalf-server.log for more information"
         exit 1
     fi
     echo "gandalf found running at $gandalfaddr"
+    sudo stop git-daemon 1>&2 2>/dev/null || true
+    sudo start git-daemon
+    local gitaddr=$(running_addr git-daemon)
+    if [[ $gitaddr == "" ]]; then
+        echo "Error: Couldn't find git-daemon addr, please check your logs"
+        exit 1
+    fi
+    echo "git-daemon found running at $gitaddr"
+
 }
 
 function install_beanstalkd {
