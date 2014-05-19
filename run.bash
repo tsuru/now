@@ -306,6 +306,7 @@ function install_go {
 }
 
 function config_tsuru_pre {
+    sudo mkdir -p /etc/tsuru
     echo $TSURU_CONF | sudo tee /etc/tsuru/tsuru.conf > /dev/null
     sudo sed -i.old -e "s/{{{HOST_IP}}}/${host_ip}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{HOST_NAME}}}/${host_name}/g" /etc/tsuru/tsuru.conf
