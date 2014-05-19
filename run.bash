@@ -4,11 +4,11 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-host_ip="127.0.0.1"
+host_ip=""
 mongohost="127.0.0.1"
 mongoport="27017"
 dockerhost="127.0.0.1"
-dockerport=""
+dockerport="4243"
 
 IFS=''
 
@@ -86,7 +86,7 @@ function running_port {
 function running_addr {
     local appname=$1
     sleep 1
-    if [[ $appname == "node" ]]; then sleep 1; fi
+    if [[ $appname == "node" ]]; then sleep 2; fi
     echo $(sudo netstat -tnlp | grep $appname | tr -s " " | cut -d' ' -f 4 | sort | head -n1)
 }
 
@@ -104,11 +104,17 @@ function installed_version {
 #############################################################################
 
 function set_host {
-    host_ip=$(curl -s -L -m2 http://169.254.169.254/latest/meta-data/public-hostname || true)
+    if [[ $host_ip == "" ]]; then
+        host_ip=$(curl -s -L -m2 http://169.254.169.254/latest/meta-data/public-hostname || true)
+    fi
     if [[ $host_ip == "" ]]; then
         host_ip=$(ifconfig | grep -A1 eth | grep "inet addr" | tail -n1 | sed "s/.*addr:\([0-9.]*\).*/\1/")
     fi
-    echo "Chosen host ip: $host_ip"
+    if [[ $host_ip == "" || $host_ip == "127.0.0.1" ]]; then
+        echo "Couldn't find suitable host_ip, please run with --host-ip <external ip>"
+        exit 1
+    fi
+    echo "Chosen host ip: $host_ip. You can override with --host-ip <external ip>"
 }
 
 function check_support {
@@ -309,14 +315,46 @@ function config_tsuru_post {
 }
 
 function add_as_docker_node {
-    mongo tsurudb --eval "db.docker_containers.insert({_id: 'theonepool'})"
-    mongo tsurudb --eval "db.docker_containers.update({_id: 'theonepool'}, {\$addToSet: {nodes: 'http://$dockerhost:$dockerport'}})"
+    mongo tsurudb --eval "db.docker_scheduler.insert({_id: 'theonepool'})"
+    mongo tsurudb --eval "db.docker_scheduler.update({_id: 'theonepool'}, {\$addToSet: {nodes: 'http://$dockerhost:$dockerport'}})"
 }
 
 function add_initial_user {
+    # TODO: Non-interactive admin user registration
     # admin:admin123
-    mongo tsurudb --eval 'db.users.insert({email: "admin", password: "$2a$10$WyfKu8CJeWpSHiC2EBntqeHKSn5j7bhcP/tBZer181Hs3DeOjl/Q."})'
-    mongo tsurudb --eval 'db.teams.insert({_id: "admin", users: ["admin"]})'
+    # mongo tsurudb --eval 'db.users.insert({email: "admin", password: "$2a$10$WyfKu8CJeWpSHiC2EBntqeHKSn5j7bhcP/tBZer181Hs3DeOjl/Q."})'
+    mongo tsurudb --eval 'db.teams.insert({_id: "admin"})'
+    mongo tsurudb --eval "db.teams.update({_id: 'admin'}, {\$addToSet: {users: 'admin@example.com'}})"
+    if [[ ! -e ~/.tsuru_token ]]; then
+        echo 'Registering admin@example.com user. Please enter a password.'
+        tsuru-admin user-create admin@example.com
+        echo 'Please type the password again.'
+        tsuru-admin login admin@example.com
+    fi
+}
+
+function install_abyss {
+    if [[ ! -e ~/.ssh/id_rsa ]]; then
+        yes | ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa > /dev/null
+        tsuru key-add
+    fi
+    has_plat=$(tsuru platform-list | grep python)
+    if [[ $has_plat == "" ]]; then
+        tsuru-admin platform-add python --dockerfile https://raw.githubusercontent.com/tsuru/basebuilder/master/python/Dockerfile
+    fi
+    tsuru app-create abyss python || true
+    pushd /tmp
+    if [[ ! -e /tmp/abyss/app.yaml ]]; then
+        git clone https://github.com/tsuru/tsuru-dashboard abyss
+    fi
+    pushd abyss
+    git reset --hard
+    git clean -dfx
+    git pull
+    git remote add tsuru git@192.168.50.6:abyss.git || true
+    git push tsuru master
+    popd
+    popd
 }
 
 function install_tsuru_pkg {
@@ -343,6 +381,7 @@ function install_tsuru_src {
     fi
     go get github.com/tsuru/tsuru/cmd/tsr
     go get github.com/tsuru/tsuru/cmd/tsuru-admin
+    go get github.com/tsuru/tsuru/cmd/tsuru
 
     screen -X -S admin quit || true
     screen -X -S api quit || true
@@ -364,7 +403,7 @@ function config_git_key {
         echo "export TSURU_TOKEN=$token" | sudo tee -a ~git/.bash_profile > /dev/null
     fi
     local tsuru_host=$(bash -ic 'source ~git/.bash_profile && echo $TSURU_HOST')
-    if [[ $tsuru_host == "$host_ip:8080" ]]; then
+    if [[ $tsuru_host != "$host_ip:8080" ]]; then
         echo "Adding tsr host to ~git/.bash_profile"
         echo "export TSURU_HOST=$host_ip:8080" | sudo tee -a ~git/.bash_profile > /dev/null
     fi
@@ -392,10 +431,25 @@ function install_all {
     config_git_key
     add_as_docker_node
     add_initial_user
+    install_abyss
+
+    echo '######################## DONE! ########################'
+    echo
+    local cont_id=$(docker ps | grep abyss | cut -d ' ' -f 1)
+    local abyss_port=$(docker inspect $cont_id | grep HostPort  | head -n1 | sed "s/[^0-9]//g")
+    echo "Your dashboard is running at $host_ip:$abyss_port"
+    echo
+    echo "Your tsuru target is $host_ip:8080"
+    echo
+    echo "To use Tsuru router you should have a DNS entry *.tsuru-sample.com -> $host_ip"
 }
 
 while [ "${1-}" != "" ]; do
     case $1 in
+        "--host-ip")
+            shift
+            host_ip=$1
+            ;;
         "--tsuru-pkg")
             install_tsuru_pkg=1
             ;;
