@@ -5,6 +5,7 @@
 # license that can be found in the LICENSE file.
 
 host_ip=""
+host_name="tsuru-sample.com"
 mongohost="127.0.0.1"
 mongoport="27017"
 dockerhost="127.0.0.1"
@@ -55,7 +56,7 @@ auth:
 
 provisioner: docker
 hipache:
-  domain: tsuru-sample.com
+  domain: {{{HOST_NAME}}}
 docker:
   collection: docker_containers
   repository-namespace: tsuru
@@ -304,6 +305,7 @@ function install_go {
 function config_tsuru_pre {
     echo $TSURU_CONF | sudo tee /etc/tsuru/tsuru.conf > /dev/null
     sudo sed -i.old -e "s/{{{HOST_IP}}}/${host_ip}/g" /etc/tsuru/tsuru.conf
+    sudo sed -i.old -e "s/{{{HOST_NAME}}}/${host_name}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{MONGO_HOST}}}/${mongohost}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{MONGO_PORT}}}/${mongoport}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e 's/=no/=yes/' /etc/default/tsuru-server
@@ -441,11 +443,15 @@ function install_all {
     echo
     echo "Your tsuru target is $host_ip:8080"
     echo
-    echo "To use Tsuru router you should have a DNS entry *.tsuru-sample.com -> $host_ip"
+    echo "To use Tsuru router you should have a DNS entry *.$host_name -> $host_ip"
 }
 
 while [ "${1-}" != "" ]; do
     case $1 in
+        "--host-name")
+            shift
+            host_name=$1
+            ;;
         "--host-ip")
             shift
             host_ip=$1
