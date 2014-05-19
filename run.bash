@@ -173,6 +173,7 @@ function install_docker {
         echo "Adding DOCKER_HOST to ~/.bashrc"
         echo -e "export DOCKER_HOST=$dockerhost:$dockerport" | tee -a ~/.bashrc > /dev/null
     fi
+    export DOCKER_HOST=$dockerhost:$dockerport
 }
 
 function install_mongo {
