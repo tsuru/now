@@ -18,5 +18,5 @@ These are some goals for this project:
 Running the command below should already create a working tsuru environment:
 
 ```
-curl -sL https://raw.github.com/tsuru/now/master/run.bash | bash -ue
+curl -sL https://raw.github.com/tsuru/now/master/run.bash | bash
 ```
