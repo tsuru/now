@@ -10,6 +10,8 @@ mongoport="27017"
 dockerhost="127.0.0.1"
 dockerport=""
 
+IFS=''
+
 GANDALF_CONF=$(cat <<EOF
 bin-path: /usr/bin/gandalf-ssh
 git:
@@ -32,9 +34,10 @@ EOF
 
 TSURU_CONF=$(cat <<EOF
 listen: "0.0.0.0:8080"
-admin-listen: "0.0.0.0:8888"
+admin-listen: "127.0.0.1:8888"
 host: http://{{{HOST_IP}}}:8080
 debug: true
+admin-team: admin
 
 database:
   url: {{{MONGO_HOST}}}:{{{MONGO_PORT}}}
@@ -73,6 +76,33 @@ docker:
 EOF
 )
 
+#############################################################################
+
+function running_port {
+    local appname=$1
+    echo $(running_addr $appname | sed s/.*://)
+}
+
+function running_addr {
+    local appname=$1
+    sleep 1
+    if [[ $appname == "node" ]]; then sleep 1; fi
+    echo $(sudo netstat -tnlp | grep $appname | tr -s " " | cut -d' ' -f 4 | sort | head -n1)
+}
+
+function installed_version {
+    local cmdid=${1-}
+    local minversion=${2-}
+    local version=${3-}
+    local max_version=$(echo -e "${minversion}min\n$version" | sort -V | tail -n 1)
+    local install_var=$(eval echo $`echo '{install_'`${cmdid}`echo '-}'`)
+    if [[ $install_var != "1" && $max_version != "${minversion}min" ]]; then
+        echo $max_version
+    fi
+}
+
+#############################################################################
+
 function set_host {
     host_ip=$(curl -s -L -m2 http://169.254.169.254/latest/meta-data/public-hostname || true)
     if [[ $host_ip == "" ]]; then
@@ -95,9 +125,9 @@ function check_support {
 }
 
 function install_basic_deps {
-    echo "Updating apt-get and installing basic dependencies..."
+    echo "Updating apt-get and installing basic dependencies (this could take a while)..."
     sudo apt-get update -qq
-    sudo apt-get install curl mercurial git bzr redis-server python-software-properties -qqy
+    sudo apt-get install screen curl mercurial git bzr redis-server python-software-properties -qqy
     sudo apt-add-repository ppa:tsuru/lvm2 -y >/dev/null 2>&1
     sudo apt-add-repository ppa:tsuru/ppa -y >/dev/null 2>&1
     sudo apt-get update -qq
@@ -105,9 +135,9 @@ function install_basic_deps {
 
 function install_docker {
     local version=$(docker version 2>/dev/null | grep "Client version" | cut -d" " -f3)
-    local max_version=$(echo -e "0.9.0min\n$version" | sort -V | tail -n 1)
-    if [[ ${install_docker-} != "1" && $max_version != "0.9.0min" ]]; then
-        echo "Skipping docker installation, version installed: $max_version"
+    local iversion=$(installed_version docker 0.9.0 $version)
+    if [[ $iversion != "" ]]; then
+        echo "Skipping docker installation, version installed: $iversion"
     else
         echo "Installing docker..."
         curl -s https://get.docker.io/gpg | sudo apt-key add -
@@ -122,13 +152,12 @@ function install_docker {
     fi
     sudo stop docker 1>&2 2>/dev/null || true
     sudo start docker
-    sleep 1
-    dockerport=$(sudo netstat -tnlp | grep docker | tr -s " " | cut -d' ' -f 4 | sed s/.*://)
+    dockerport=$(running_port docker)
     if [[ $dockerport == "" ]]; then
         echo "Error: Couldn't find docker port, please check /var/log/upstart/docker.log for more information"
         exit 1
     fi
-    echo "Docker found running at $dockerhost:$dockerport"
+    echo "docker found running at $dockerhost:$dockerport"
     local home_host=$(bash -ic 'source ~/.bashrc && echo $DOCKER_HOST')
     if [[ $home_host != "$dockerhost:$dockerport" ]]; then
         echo "Adding DOCKER_HOST to ~/.bashrc"
@@ -138,9 +167,9 @@ function install_docker {
 
 function install_mongo {
     local version=$(mongod --version | grep "db version" | sed s/^.*v//)
-    local max_version=$(echo -e "2.4.0min\n$version" | sort -V | tail -n 1)
-    if [[ ${install_mongo-} != "1" && $max_version != "2.4.0min" ]]; then
-        echo "Skipping mongod installation, version installed: $max_version"
+    local iversion=$(installed_version mongo 2.4.0 $version)
+    if [[ $iversion != "" ]]; then
+        echo "Skipping mongod installation, version installed: $iversion"
     else
         echo "Installing mongodb..."
         sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
@@ -150,19 +179,26 @@ function install_mongo {
     fi
     sudo stop mongodb 1>&2 2>/dev/null || true
     sudo start mongodb
-    sleep 1
-    mongoport=$(sudo netstat -tnlp | grep mongod | tr -s " " | cut -d' ' -f 4 | sed s/.*:// | sort | head -n1)
+    mongoport=$(running_port mongod)
     if [[ $mongoport == "" ]]; then
         echo "Error: Couldn't find mongod port, please check /var/log/mongodb/mongodb.log for more information"
         exit 1
     fi
-    echo "Mongodb found running at $mongohost:$mongoport"
+    echo "mongodb found running at $mongohost:$mongoport"
 }
 
 function install_hipache {
+    # TODO detect existing installation
     sudo apt-get install node-hipache -qqy
     sudo stop hipache 1>&2 2>/dev/null || true
     sudo start hipache
+    local addr=$(running_addr node)
+    if [[ $addr == "" ]]; then
+        echo "Error: Couldn't find hipache addr, please check /var/log/upstart/hipache.log for more information"
+        exit 1
+    fi
+    echo "node hipache found running at $addr"
+
 }
 
 function install_gandalf {
@@ -177,13 +213,43 @@ function install_gandalf {
     sudo rm /etc/gandalf.conf.old
     sudo stop gandalf-server 1>&2 2>/dev/null || true
     sudo start gandalf-server
+    local gitaddr=$(running_addr git-daemon)
+    if [[ $gitaddr == "" ]]; then
+        echo "Error: Couldn't find git-daemon addr, please check your logs"
+        exit 1
+    fi
+    echo "git-daemon found running at $gitaddr"
+    local gandalfaddr=$(running_addr gandalf)
+    if [[ $gandalfaddr == "" ]]; then
+        echo "Error: Couldn't find gandalf addr, please check /var/log/upstart/gandalf-server.log for more information"
+        exit 1
+    fi
+    echo "gandalf found running at $gandalfaddr"
 }
 
 function install_beanstalkd {
-    yes N | sudo apt-get install beanstalkd -qqy
-    echo $BEANSTALKD_CONF | sudo tee /etc/default/beanstalkd > /dev/null
+    local version=$(beanstalkd -v | sed "s/[^0-9]*\([0-9.]*\)/\1/")
+    local iversion=$(installed_version beanstalkd 1.4.5 $version)
+    if [[ $iversion != "" ]]; then
+        echo "Skipping beanstalkd installation, version installed: $iversion"
+    else
+        echo "Installing beanstalkd..."
+        yes N | sudo apt-get install beanstalkd -qqy
+    fi
     sudo service beanstalkd stop 1>&2 2>/dev/null || true
     sudo service beanstalkd start
+    local port=$(running_port beanstalkd)
+    if [[ $port == "" ]]; then
+        echo $BEANSTALKD_CONF | sudo tee /etc/default/beanstalkd > /dev/null
+        sudo service beanstalkd stop 1>&2 2>/dev/null || true
+        sudo service beanstalkd start
+        local port=$(running_port beanstalkd)
+        if [[ $port == "" ]]; then
+            echo "Error: Couldn't find beanstalkd port, please check your logs."
+            exit 1
+        fi
+    fi
+    echo "beanstalkd found running at 127.0.0.1:$port"
 }
 
 function generate_key {
@@ -198,14 +264,64 @@ function generate_key {
     fi
 }
 
-function install_tsuru {
-    sudo apt-get install tsuru-server -qqy
+function install_go {
+    local version=$(go version | sed "s/go version[^0-9]*\([0-9.]*\).*/\1/")
+    local iversion=$(installed_version mongo 1.1.0 $version)
+    if [[ $iversion != "" ]]; then
+        echo "Skipping golang installation, version installed: $iversion"
+    else
+        echo "Installing golang..."
+        if [[ $(uname -p | grep 64) == "" ]]; then
+            local plat="386"
+        else
+            local plat="amd64"
+        fi
+        curl -sL https://godeb.s3.amazonaws.com/godeb-$plat.tar.gz -o /tmp/godeb.tgz
+        tar -C /tmp -zxpf /tmp/godeb.tgz
+        chmod +x /tmp/godeb
+        /tmp/godeb install
+    fi
+    local gopath=$(bash -ic 'source ~/.bashrc && echo $GOPATH')
+    if [[ $gopath != "$HOME/go" ]]; then
+        echo "Adding GOPATH to ~/.bashrc"
+        echo -e "export GOPATH=$HOME/go" | tee -a ~/.bashrc > /dev/null
+    fi
+    local path=$(bash -ic 'source ~/.bashrc && echo $PATH')
+    if [[ ! $path =~ "$HOME/go/bin" ]]; then
+        echo "Adding GOPATH/bin to PATH in ~/.bashrc"
+        echo -e "export PATH=$HOME/go/bin:$PATH" | tee -a ~/.bashrc > /dev/null
+    fi
+    export GOPATH=$HOME/go
+    export PATH=$HOME/go/bin:$PATH
+}
 
+function config_tsuru_pre {
     echo $TSURU_CONF | sudo tee /etc/tsuru/tsuru.conf > /dev/null
     sudo sed -i.old -e "s/{{{HOST_IP}}}/${host_ip}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{MONGO_HOST}}}/${mongohost}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{MONGO_PORT}}}/${mongoport}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e 's/=no/=yes/' /etc/default/tsuru-server
+}
+
+function config_tsuru_post {
+    tsuru-admin target-add default 127.0.0.1:8080 || true
+    tsuru-admin target-set default
+}
+
+function add_as_docker_node {
+    mongo tsurudb --eval "db.docker_containers.insert({_id: 'theonepool'})"
+    mongo tsurudb --eval "db.docker_containers.update({_id: 'theonepool'}, {\$addToSet: {nodes: 'http://$dockerhost:$dockerport'}})"
+}
+
+function add_initial_user {
+    # admin:admin123
+    mongo tsurudb --eval 'db.users.insert({email: "admin", password: "$2a$10$WyfKu8CJeWpSHiC2EBntqeHKSn5j7bhcP/tBZer181Hs3DeOjl/Q."})'
+    mongo tsurudb --eval 'db.teams.insert({_id: "admin", users: ["admin"]})'
+}
+
+function install_tsuru_pkg {
+    echo "Installing Tsuru from deb package..."
+    sudo apt-get install tsuru-server -qqy
 
     sudo stop tsuru-ssh-agent >/dev/null 2>&1 || true
     sudo stop tsuru-server-api >/dev/null 2>&1 || true
@@ -216,11 +332,43 @@ function install_tsuru {
     sudo start tsuru-server-api
     sudo start tsuru-server-collector
     sudo start tsuru-server-admin
+}
 
-    local existing_node=$(tsr docker-list-nodes | grep $dockerhost:$dockerport)
-    if [[ $existing_node == "" ]]; then
-        tsr docker-add-node node1 http://$dockerhost:$dockerport
+function install_tsuru_src {
+    echo "Installing Tsuru from source (this could take some minutes)..."
+    if [[ -e $GOPATH/src/github.com/tsuru/tsuru ]]; then
+        pushd $GOPATH/src/github.com/tsuru/tsuru
+        git reset --hard && git clean -dfx && git pull
+        popd
     fi
+    go get github.com/tsuru/tsuru/cmd/tsr
+    go get github.com/tsuru/tsuru/cmd/tsuru-admin
+
+    screen -X -S admin quit || true
+    screen -X -S api quit || true
+    screen -X -S collector quit || true
+    screen -X -S ssh quit || true
+
+    local config_file=/etc/tsuru/tsuru.conf
+    screen -S admin -d -m tsr admin-api --config=$config_file
+    screen -S api -d -m tsr api --config=$config_file
+    screen -S collector -d -m tsr collector --config=$config_file
+    screen -S ssh -d -m tsr docker-ssh-agent -l 0.0.0.0:4545 -u ubuntu -k /var/lib/tsuru/.ssh/id_rsa
+}
+
+function config_git_key {
+    local tsuru_token=$(bash -ic 'source ~git/.bash_profile && echo $TSURU_TOKEN')
+    if [[ $tsuru_token == "" ]]; then
+        echo "Adding tsr token to ~git/.bash_profile"
+        local token=$(tsr token)
+        echo "export TSURU_TOKEN=$token" | sudo tee -a ~git/.bash_profile > /dev/null
+    fi
+    local tsuru_host=$(bash -ic 'source ~git/.bash_profile && echo $TSURU_HOST')
+    if [[ $tsuru_host == "$host_ip:8080" ]]; then
+        echo "Adding tsr host to ~git/.bash_profile"
+        echo "export TSURU_HOST=$host_ip:8080" | sudo tee -a ~git/.bash_profile > /dev/null
+    fi
+    sudo chown -R git:git ~git/.bash_profile
 }
 
 function install_all {
@@ -233,11 +381,24 @@ function install_all {
     install_beanstalkd
     install_gandalf
     generate_key
-    install_tsuru
+    config_tsuru_pre
+    if [[ ${install_tsuru_pkg-} == "1" ]]; then
+        install_tsuru_pkg
+    else
+        install_go
+        install_tsuru_src
+    fi
+    config_tsuru_post
+    config_git_key
+    add_as_docker_node
+    add_initial_user
 }
 
 while [ "${1-}" != "" ]; do
     case $1 in
+        "--tsuru-pkg")
+            install_tsuru_pkg=1
+            ;;
         "-f" | "--force-install")
             shift
             declare "install_$1=1"
