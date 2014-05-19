@@ -347,8 +347,8 @@ function add_initial_user {
 function install_abyss {
     if [[ ! -e ~/.ssh/id_rsa ]]; then
         yes | ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa > /dev/null
-        tsuru key-add
     fi
+    tsuru key-add || true
     has_plat=`(tsuru platform-list | grep python) || true`
     if [[ $has_plat == "" ]]; then
         tsuru-admin platform-add python --dockerfile https://raw.githubusercontent.com/tsuru/basebuilder/master/python/Dockerfile
