@@ -312,7 +312,9 @@ function config_tsuru_pre {
     sudo sed -i.old -e "s/{{{HOST_NAME}}}/${host_name}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{MONGO_HOST}}}/${mongohost}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{MONGO_PORT}}}/${mongoport}/g" /etc/tsuru/tsuru.conf
-    sudo sed -i.old -e 's/=no/=yes/' /etc/default/tsuru-server
+    if [[ -e /etc/default/tsuru-server ]]; then
+        sudo sed -i.old -e 's/=no/=yes/' /etc/default/tsuru-server
+    fi
 }
 
 function config_tsuru_post {
