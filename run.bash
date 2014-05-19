@@ -4,6 +4,9 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
+set -u
+set -e
+
 host_ip=""
 host_name="tsuru-sample.com"
 mongohost="127.0.0.1"
@@ -335,9 +338,9 @@ function add_initial_user {
     mongo tsurudb --eval "db.teams.update({_id: 'admin'}, {\$addToSet: {users: 'admin@example.com'}})"
     if [[ ! -e ~/.tsuru_token ]]; then
         echo 'Registering admin@example.com user. Please enter a password.'
-        tsuru-admin user-create admin@example.com
+        tsuru-admin user-create admin@example.com < /dev/tty || true
         echo 'Please type the password again.'
-        tsuru-admin login admin@example.com
+        tsuru-admin login admin@example.com < /dev/tty || true
     fi
 }
 
@@ -346,7 +349,7 @@ function install_abyss {
         yes | ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa > /dev/null
         tsuru key-add
     fi
-    has_plat=$(tsuru platform-list | grep python)
+    has_plat=`(tsuru platform-list | grep python) || true`
     if [[ $has_plat == "" ]]; then
         tsuru-admin platform-add python --dockerfile https://raw.githubusercontent.com/tsuru/basebuilder/master/python/Dockerfile
     fi
