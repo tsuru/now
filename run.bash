@@ -363,7 +363,7 @@ function install_abyss {
     git reset --hard
     git clean -dfx
     git pull
-    git remote add tsuru git@192.168.50.6:abyss.git || true
+    git remote add tsuru git@${host_ip}:abyss.git || true
     git push tsuru master
     popd
     popd
