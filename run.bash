@@ -112,7 +112,7 @@ function set_host {
         host_ip=$(curl -s -L -m2 http://169.254.169.254/latest/meta-data/public-hostname || true)
     fi
     if [[ $host_ip == "" ]]; then
-        host_ip=$(ifconfig | grep -A1 eth | grep "inet addr" | tail -n1 | sed "s/.*addr:\([0-9.]*\).*/\1/")
+        host_ip=$(ifconfig | grep -A1 eth | grep "inet addr" | tail -n1 | sed "s/[^0-9]*\([0-9.]*\).*/\1/")
     fi
     if [[ $host_ip == "" || $host_ip == "127.0.0.1" ]]; then
         echo "Couldn't find suitable host_ip, please run with --host-ip <external ip>"
