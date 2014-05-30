@@ -13,6 +13,8 @@ mongohost="127.0.0.1"
 mongoport="27017"
 dockerhost="127.0.0.1"
 dockerport="4243"
+adminuser="admin@example.com"
+adminpassword="admin123"
 
 IFS=''
 
@@ -25,14 +27,6 @@ git:
 host: {{{HOST_IP}}}
 bind: localhost:8000
 uid: git
-EOF
-)
-
-BEANSTALKD_CONF=$(cat <<EOF
-BEANSTALKD_LISTEN_ADDR=127.0.0.1
-BEANSTALKD_LISTEN_PORT=11300
-DAEMON_OPTS="-l \$BEANSTALKD_LISTEN_ADDR -p \$BEANSTALKD_LISTEN_PORT -b /var/lib/beanstalkd"
-START=yes
 EOF
 )
 
@@ -60,6 +54,10 @@ auth:
 provisioner: docker
 hipache:
   domain: {{{HOST_NAME}}}
+queue: redis
+redis-queue:
+  host: localhost
+  port: 6379
 docker:
   collection: docker_containers
   repository-namespace: tsuru
@@ -99,7 +97,7 @@ function installed_version {
     local minversion=${2-}
     local version=${3-}
     local max_version=$(echo -e "${minversion}min\n$version" | sort -V | tail -n 1)
-    local install_var=$(eval echo $`echo '{install_'`${cmdid}`echo '-}'`)
+    local install_var=$(eval echo $`echo '{force_install_'`${cmdid}`echo '-}'`)
     if [[ $install_var != "1" && $max_version != "${minversion}min" ]]; then
         echo $max_version
     fi
@@ -137,7 +135,7 @@ function check_support {
 function install_basic_deps {
     echo "Updating apt-get and installing basic dependencies (this could take a while)..."
     sudo apt-get update -qq
-    sudo apt-get install screen curl mercurial git bzr redis-server python-software-properties -qqy
+    sudo apt-get install jq screen curl mercurial git bzr redis-server python-software-properties -qqy
     sudo apt-add-repository ppa:tsuru/ppa -y >/dev/null 2>&1
     sudo apt-get update -qq
 }
@@ -229,6 +227,7 @@ function install_gandalf {
         exit 1
     fi
     echo "gandalf found running at $gandalfaddr"
+    echo -e "Host ${host_ip}\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
     sudo stop git-daemon 1>&2 2>/dev/null || true
     sudo start git-daemon
     local gitaddr=$(running_addr git-daemon)
@@ -238,31 +237,6 @@ function install_gandalf {
     fi
     echo "git-daemon found running at $gitaddr"
 
-}
-
-function install_beanstalkd {
-    local version=$(beanstalkd -v | sed "s/[^0-9]*\([0-9.]*\)/\1/")
-    local iversion=$(installed_version beanstalkd 1.4.5 $version)
-    if [[ $iversion != "" ]]; then
-        echo "Skipping beanstalkd installation, version installed: $iversion"
-    else
-        echo "Installing beanstalkd..."
-        yes N | sudo apt-get install beanstalkd -qqy
-    fi
-    sudo service beanstalkd stop 1>&2 2>/dev/null || true
-    sudo service beanstalkd start
-    local port=$(running_port beanstalkd)
-    if [[ $port == "" ]]; then
-        echo $BEANSTALKD_CONF | sudo tee /etc/default/beanstalkd > /dev/null
-        sudo service beanstalkd stop 1>&2 2>/dev/null || true
-        sudo service beanstalkd start
-        local port=$(running_port beanstalkd)
-        if [[ $port == "" ]]; then
-            echo "Error: Couldn't find beanstalkd port, please check your logs."
-            exit 1
-        fi
-    fi
-    echo "beanstalkd found running at 127.0.0.1:$port"
 }
 
 function generate_key {
@@ -279,11 +253,11 @@ function generate_key {
 
 function install_go {
     local version=$(go version | sed "s/go version[^0-9]*\([0-9.]*\).*/\1/")
-    local iversion=$(installed_version mongo 1.1.0 $version)
+    local iversion=$(installed_version go 1.1.0 $version)
     if [[ $iversion != "" ]]; then
-        echo "Skipping golang installation, version installed: $iversion"
+        echo "Skipping go installation, version installed: $iversion"
     else
-        echo "Installing golang..."
+        echo "Installing go..."
         if [[ $(uname -p | grep 64) == "" ]]; then
             local plat="386"
         else
@@ -331,20 +305,18 @@ function add_as_docker_node {
 }
 
 function add_initial_user {
-    # TODO: Non-interactive admin user registration
-    # admin:admin123
-    # mongo tsurudb --eval 'db.users.insert({email: "admin", password: "$2a$10$WyfKu8CJeWpSHiC2EBntqeHKSn5j7bhcP/tBZer181Hs3DeOjl/Q."})'
+    echo "Adding initial admin user..."
     mongo tsurudb --eval 'db.teams.insert({_id: "admin"})'
-    mongo tsurudb --eval "db.teams.update({_id: 'admin'}, {\$addToSet: {users: 'admin@example.com'}})"
+    mongo tsurudb --eval "db.teams.update({_id: 'admin'}, {\$addToSet: {users: '${adminuser}'}})"
     if [[ ! -e ~/.tsuru_token ]]; then
-        echo 'Registering admin@example.com user. Please enter a password.'
-        tsuru-admin user-create admin@example.com < /dev/tty || true
-        echo 'Please type the password again.'
-        tsuru-admin login admin@example.com < /dev/tty || true
+        curl -s -XPOST -d"{\"email\":\"${adminuser}\",\"password\":\"${adminpassword}\"}" http://${host_ip}:8080/users
+        local token=$(curl -s -XPOST -d"{\"password\":\"${adminpassword}\"}" http://${host_ip}:8080/users/${adminuser}/tokens | jq -r .token)
+        echo $token > ~/.tsuru_token
     fi
 }
 
-function install_abyss {
+function install_dashboard {
+    echo "Installing tsuru-dashboard..."
     if [[ ! -e ~/.ssh/id_rsa ]]; then
         yes | ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa > /dev/null
     fi
@@ -353,16 +325,16 @@ function install_abyss {
     if [[ $has_plat == "" ]]; then
         tsuru-admin platform-add python --dockerfile https://raw.githubusercontent.com/tsuru/basebuilder/master/python/Dockerfile
     fi
-    tsuru app-create abyss python || true
+    tsuru app-create tsuru-dashboard python || true
     pushd /tmp
-    if [[ ! -e /tmp/abyss/app.yaml ]]; then
-        git clone https://github.com/tsuru/tsuru-dashboard abyss
+    if [[ ! -e /tmp/tsuru-dashboard/app.yaml ]]; then
+        git clone https://github.com/tsuru/tsuru-dashboard
     fi
-    pushd abyss
+    pushd tsuru-dashboard
     git reset --hard
     git clean -dfx
     git pull
-    git remote add tsuru git@${host_ip}:abyss.git || true
+    git remote add tsuru git@${host_ip}:tsuru-dashboard.git || true
     git push tsuru master
     popd
     popd
@@ -428,7 +400,6 @@ function install_all {
     install_docker
     install_mongo
     install_hipache
-    install_beanstalkd
     install_gandalf
     generate_key
     config_tsuru_pre
@@ -442,17 +413,26 @@ function install_all {
     config_git_key
     add_as_docker_node
     add_initial_user
-    install_abyss
+    install_dashboard
 
+    local cont_id=$(docker ps | grep tsuru-dashboard | cut -d ' ' -f 1)
+    local dashboard_port=$(docker inspect $cont_id | grep HostPort  | head -n1 | sed "s/[^0-9]//g")
     echo '######################## DONE! ########################'
     echo
-    local cont_id=$(docker ps | grep abyss | cut -d ' ' -f 1)
-    local abyss_port=$(docker inspect $cont_id | grep HostPort  | head -n1 | sed "s/[^0-9]//g")
-    echo "Your dashboard is running at $host_ip:$abyss_port"
+    echo "Some information about your tsuru installation:"
     echo
-    echo "Your tsuru target is $host_ip:8080"
+    echo "Admin user: ${adminuser}"
+    echo "Admin password: ${adminpassword} (PLEASE CHANGE RUNNING: tsuru change-password)"
+    echo "Target address: $host_ip:8080"
+    echo "Dashboard address: $host_ip:$dashboard_port"
     echo
     echo "To use Tsuru router you should have a DNS entry *.$host_name -> $host_ip"
+    echo
+    echo "You should run \`source ~/.bashrc\` on your current terminal."
+    echo
+    echo "Installed apps:"
+    sleep 1
+    tsuru app-list
 }
 
 while [ "${1-}" != "" ]; do
@@ -470,7 +450,7 @@ while [ "${1-}" != "" ]; do
             ;;
         "-f" | "--force-install")
             shift
-            declare "install_$1=1"
+            declare "force_install_$1=1"
             ;;
     esac
     shift
