@@ -325,6 +325,21 @@ function install_dashboard {
     if [[ $has_plat == "" ]]; then
         tsuru-admin platform-add python --dockerfile https://raw.githubusercontent.com/tsuru/basebuilder/master/python/Dockerfile
     fi
+    local platform_ok=$(docker run --rm tsuru/python bash -c "circusd --daemon /etc/circus/circus.ini && sleep 2 && ps aux | grep circusd | grep -v grep")
+    if [[ $platform_ok == "" ]]; then
+        # Circusd bugged version, rebuilding platform
+        tsuru-admin platform-update python --dockerfile https://raw.githubusercontent.com/tsuru/basebuilder/master/python/Dockerfile
+    fi
+    local platform_ok=$(docker run --rm tsuru/python bash -c "circusd --daemon /etc/circus/circus.ini && sleep 2 && ps aux | grep circusd | grep -v grep")
+    if [[ $platform_ok == "" ]]; then
+        echo "Error trying to start circus inside python docker image. Please report this as a bug in https://github.com/tsuru/now/issues"
+        echo "Additional information:"
+        uname -a
+        docker version
+        echo "Tsuru hash: "
+        git --git-dir ~/go/src/github.com/tsuru/tsuru/.git log | head -n1
+        exit 1
+    fi
     tsuru app-create tsuru-dashboard python || true
     pushd /tmp
     if [[ ! -e /tmp/tsuru-dashboard/app.yaml ]]; then
