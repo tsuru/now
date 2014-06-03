@@ -357,7 +357,7 @@ function install_dashboard {
 
 function install_tsuru_pkg {
     echo "Installing Tsuru from deb package..."
-    sudo apt-get install tsuru-server -qqy
+    sudo apt-get install tsuru-server tsuru-admin tsuru -qqy
 
     sudo stop tsuru-ssh-agent >/dev/null 2>&1 || true
     sudo stop tsuru-server-api >/dev/null 2>&1 || true
