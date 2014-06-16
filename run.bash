@@ -451,6 +451,7 @@ function install_all {
         install_tsuru_src
     fi
     if [[ ${install_archive_server} == "1" ]]; then
+        install_go
         install_archive_server_src
     fi
     config_tsuru_post
