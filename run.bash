@@ -416,7 +416,7 @@ function install_archive_server_src {
         echo "export ARCHIVE_SERVER_WRITE=http://127.0.0.1:6161" | sudo tee -a ~git/.bash_profile > /dev/null
     fi
 
-    screen -S archiveserver -d -m archive-server -read-http=127.0.0.1:6161 -write-http=0.0.0.0:6060 -dir=/var/lib/archives
+    screen -S archiveserver -d -m archive-server -read-http=0.0.0.0:6060 -write-http=127.0.0.1:6161 -dir=/var/lib/archives
 }
 
 function config_git_key {
