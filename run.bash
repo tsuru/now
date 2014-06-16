@@ -15,6 +15,9 @@ dockerhost="127.0.0.1"
 dockerport="4243"
 adminuser="admin@example.com"
 adminpassword="admin123"
+install_archive_server=0
+hook_url=https://raw.github.com/tsuru/tsuru/master/misc/git-hooks/post-receive
+hook_name=post-receive
 
 IFS=''
 
@@ -213,8 +216,8 @@ function install_gandalf {
     sudo apt-get install gandalf-server -qqy
     local hook_dir=/home/git/bare-template/hooks
     sudo mkdir -p $hook_dir
-    sudo curl -s -L https://raw.github.com/tsuru/tsuru/master/misc/git-hooks/post-receive -o ${hook_dir}/post-receive
-    sudo chmod +x ${hook_dir}/post-receive
+    sudo curl -sL ${hook_url} -o ${hook_dir}/${hook_name}
+    sudo chmod +x ${hook_dir}/${hook_name}
     sudo chown -R git:git /home/git/bare-template
     echo $GANDALF_CONF | sudo tee /etc/gandalf.conf > /dev/null
     sudo sed -i.old -e "s/{{{HOST_IP}}}/${host_ip}/" /etc/gandalf.conf
@@ -393,6 +396,29 @@ function install_tsuru_src {
     screen -S ssh -d -m tsr docker-ssh-agent -l 0.0.0.0:4545 -u ubuntu -k /var/lib/tsuru/.ssh/id_rsa
 }
 
+function install_archive_server_src {
+    echo "Installing archive-server from source..."
+    if [[ -e $GOPATH/src/github.com/tsuru/archive-server ]]; then
+        pushd $GOPATH/src/github.com/tsuru/archive-server
+        git reset --hard && git clean -dfx && git pull
+        popd
+    fi
+    go get github.com/tsuru/archive-server
+
+    screen -X -S archiveserver quit || true
+    sudo mkdir -p /var/lib/archives
+    sudo chown `id -nu`:`id -ng` /var/lib/archives
+
+    local archive_write_server_write=$(bash -ic 'source ~git/.bash_profile && echo $ARCHIVE_SERVER_WRITE')
+    if [[ $archive_write_server_write != "$host_ip:6060" ]]; then
+        echo "Adding archive server environment to ~git/.bash_profile"
+        echo "export ARCHIVE_SERVER_WRITE=http://${host_ip}:6060" | sudo tee -a ~git/.bash_profile > /dev/null
+        echo "export ARCHIVE_SERVER_READ=http://127.0.0.1:6161" | sudo tee -a ~git/.bash_profile > /dev/null
+    fi
+
+    screen -S archiveserver -d -m archive-server -read-http=127.0.0.1:6161 -write-http=0.0.0.0:6060 -dir=/var/lib/archives
+}
+
 function config_git_key {
     local tsuru_token=$(bash -ic 'source ~git/.bash_profile && echo $TSURU_TOKEN')
     if [[ $tsuru_token == "" ]]; then
@@ -423,6 +449,9 @@ function install_all {
     else
         install_go
         install_tsuru_src
+    fi
+    if [[ ${install_archive_server} == "1" ]]; then
+        install_archive_server_src
     fi
     config_tsuru_post
     config_git_key
@@ -466,6 +495,17 @@ while [ "${1-}" != "" ]; do
         "-f" | "--force-install")
             shift
             declare "force_install_$1=1"
+            ;;
+        "--archive-server")
+            install_archive_server=1
+            ;;
+        "--hook-url")
+            shift
+            hook_url=$1
+            ;;
+        "--hook-name")
+            shift
+            hook_name=$1
             ;;
     esac
     shift
