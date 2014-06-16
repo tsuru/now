@@ -409,11 +409,11 @@ function install_archive_server_src {
     sudo mkdir -p /var/lib/archives
     sudo chown `id -nu`:`id -ng` /var/lib/archives
 
-    local archive_write_server_write=$(bash -ic 'source ~git/.bash_profile && echo $ARCHIVE_SERVER_WRITE')
-    if [[ $archive_write_server_write != "$host_ip:6060" ]]; then
+    local archive_server_read=$(bash -ic 'source ~git/.bash_profile && echo $ARCHIVE_SERVER_READ')
+    if [[ $archive_server_read != "http://${host_ip}:6161" ]]; then
         echo "Adding archive server environment to ~git/.bash_profile"
-        echo "export ARCHIVE_SERVER_WRITE=http://${host_ip}:6060" | sudo tee -a ~git/.bash_profile > /dev/null
-        echo "export ARCHIVE_SERVER_READ=http://127.0.0.1:6161" | sudo tee -a ~git/.bash_profile > /dev/null
+        echo "export ARCHIVE_SERVER_READ=http://${host_ip}:6060" | sudo tee -a ~git/.bash_profile > /dev/null
+        echo "export ARCHIVE_SERVER_WRITE=http://127.0.0.1:6161" | sudo tee -a ~git/.bash_profile > /dev/null
     fi
 
     screen -S archiveserver -d -m archive-server -read-http=127.0.0.1:6161 -write-http=0.0.0.0:6060 -dir=/var/lib/archives
