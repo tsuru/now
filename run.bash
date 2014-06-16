@@ -18,6 +18,7 @@ adminpassword="admin123"
 install_archive_server=0
 hook_url=https://raw.github.com/tsuru/tsuru/master/misc/git-hooks/post-receive
 hook_name=post-receive
+git_envs=(A=B)
 
 IFS=''
 
@@ -434,6 +435,13 @@ function config_git_key {
     sudo chown -R git:git ~git/.bash_profile
 }
 
+function add_git_envs {
+    if [ "${#git_envs[@]}" > 1 ]; then
+        echo "Serializing provided env vars to ~git/.bash_profile"
+        echo "export ${git_envs[@]:1}" | sudo tee -a ~git/.bash_profile > /dev/null
+    fi
+}
+
 function install_all {
     check_support
     install_basic_deps
@@ -456,6 +464,7 @@ function install_all {
     fi
     config_tsuru_post
     config_git_key
+    add_git_envs
     add_as_docker_node
     add_initial_user
     install_dashboard
@@ -507,6 +516,11 @@ while [ "${1-}" != "" ]; do
         "--hook-name")
             shift
             hook_name=$1
+            ;;
+        "--env")
+            shift
+            git_envs=("${git_envs[@]}" "$1=$2")
+            shift
             ;;
     esac
     shift
