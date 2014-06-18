@@ -450,7 +450,7 @@ function config_git_key {
 function add_git_envs {
     if [ "${#git_envs[@]}" > 1 ]; then
         echo "Serializing provided env vars to ~git/.bash_profile"
-        echo "export ${git_envs[@]:1}" | sudo tee -a ~git/.bash_profile > /dev/null
+        echo export ${git_envs[@]:1} | sudo tee -a ~git/.bash_profile > /dev/null
     fi
 }
 
