@@ -596,7 +596,7 @@ while [ "${1-}" != "" ]; do
             ;;
         "--aws-secret-key")
             shift
-            aws_secret_key=$2
+            aws_secret_key=$1
             ;;
     esac
     shift
