@@ -522,7 +522,7 @@ while [ "${1-}" != "" ]; do
             ;;
         "--env")
             shift
-            git_envs=("${git_envs[@]}" "$1=$2")
+            git_envs=("${git_envs[@]}" "$1=\"$2\"")
             shift
             ;;
     esac
