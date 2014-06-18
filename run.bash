@@ -90,9 +90,15 @@ function running_port {
 
 function running_addr {
     local appname=$1
-    sleep 1
-    if [[ $appname == "node" ]]; then sleep 2; fi
-    echo $(sudo netstat -tnlp | grep $appname | tr -s " " | cut -d' ' -f 4 | sort | head -n1)
+    for counter in {1..10}; do
+        sleep 0.5
+        local addr=$(sudo netstat -tnlp | grep $appname | tr -s " " | cut -d' ' -f 4 | sort | head -n1)
+        if [[ $addr != "" ]]; then
+            echo $addr
+            break
+        fi
+        echo "Waiting for ${appname}..." 1>&2
+    done
 }
 
 function installed_version {
@@ -450,7 +456,7 @@ function add_git_envs {
 
 function install_all {
     check_support
-    install_basic_deps
+    # install_basic_deps
     set_host
     install_docker
     install_mongo
