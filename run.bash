@@ -19,6 +19,8 @@ install_archive_server=0
 hook_url=https://raw.github.com/tsuru/tsuru/master/misc/git-hooks/post-receive
 hook_name=post-receive
 git_envs=(A=B)
+aws_access_key=""
+aws_secret_key=""
 
 IFS=''
 
@@ -428,8 +430,58 @@ function install_archive_server_src {
 }
 
 function install_swift {
-	sudo apt-get install python-pip -y
-	sudo pip install python-swiftclient
+    sudo apt-get install python-pip -y
+    sudo pip install python-swiftclient
+}
+
+function install_s3cmd {
+    sudo apt-get install s3cmd -y
+    sudo -u git cat > ~git/.s3cfg <END
+[default]
+access_key = ${aws_access_key}
+bucket_location = US
+cloudfront_host = cloudfront.amazonaws.com
+default_mime_type = binary/octet-stream
+delete_removed = False
+dry_run = False
+enable_multipart = True
+encoding = ANSI_X3.4-1968
+encrypt = False
+follow_symlinks = False
+force = False
+get_continue = False
+gpg_command = /usr/bin/gpg
+gpg_decrypt = %(gpg_command)s -d --verbose --no-use-agent --batch --yes --passphrase-fd %(passphrase_fd)s -o %(output_file)s %(input_file)s
+gpg_encrypt = %(gpg_command)s -c --verbose --no-use-agent --batch --yes --passphrase-fd %(passphrase_fd)s -o %(output_file)s %(input_file)s
+gpg_passphrase =
+guess_mime_type = True
+host_base = s3.amazonaws.com
+host_bucket = %(bucket)s.s3.amazonaws.com
+human_readable_sizes = False
+invalidate_on_cf = False
+list_md5 = False
+log_target_prefix =
+mime_type =
+multipart_chunk_size_mb = 15
+preserve_attrs = True
+progress_meter = True
+proxy_host =
+proxy_port = 0
+recursive = False
+recv_chunk = 4096
+reduced_redundancy = False
+secret_key = ${aws_secret_key}
+send_chunk = 4096
+simpledb_host = sdb.amazonaws.com
+skip_existing = False
+socket_timeout = 300
+urlencoding_mode = normal
+use_https = True
+verbosity = WARNING
+website_endpoint = http://%(bucket)s.s3-website-%(location)s.amazonaws.com/
+website_error =
+website_index = index.html
+END
 }
 
 function config_git_key {
@@ -475,6 +527,9 @@ function install_all {
         install_archive_server_src
     fi
     install_swift
+    if [[ ${aws_access_key} != "" && ${aws_secret_key} != "" ]]; then
+        install_s3cmd
+    fi
     config_tsuru_post
     config_git_key
     add_git_envs
@@ -534,6 +589,14 @@ while [ "${1-}" != "" ]; do
             shift
             git_envs=("${git_envs[@]}" "$1=\"$2\"")
             shift
+            ;;
+        "--aws-access-key")
+            shift
+            aws_access_key=$1
+            ;;
+        "--aws-secret-key")
+            shift
+            aws_secret_key=$2
             ;;
     esac
     shift
