@@ -373,9 +373,17 @@ function install_tsuru_pkg {
 
 function install_tsuru_src {
     echo "Installing Tsuru from source (this could take some minutes)..."
+    go get github.com/tools/godep
     if [[ -e $GOPATH/src/github.com/tsuru/tsuru ]]; then
         pushd $GOPATH/src/github.com/tsuru/tsuru
         git reset --hard && git clean -dfx && git pull
+        godep restore
+        popd
+    else
+        mkdir -p $GOPATH/src/github.com/tsuru/tsuru
+        pushd $GOPATH/src/github.com/tsuru/tsuru
+        git clone https://github.com/tsuru/tsuru .
+        godep restore
         popd
     fi
     go get github.com/tsuru/tsuru/cmd/tsr
