@@ -508,7 +508,7 @@ function add_git_envs {
 
 function install_all {
     check_support
-    # install_basic_deps
+    install_basic_deps
     set_host
     install_docker
     install_mongo
