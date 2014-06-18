@@ -423,6 +423,11 @@ function install_archive_server_src {
     screen -S archiveserver -d -m archive-server -read-http=0.0.0.0:6060 -write-http=127.0.0.1:6161 -dir=/var/lib/archives
 }
 
+function install_swift {
+	sudo apt-get install python-pip -y
+	sudo pip install python-swiftclient
+}
+
 function config_git_key {
     local tsuru_token=$(bash -ic 'source ~git/.bash_profile && echo $TSURU_TOKEN')
     if [[ $tsuru_token == "" ]]; then
@@ -465,6 +470,7 @@ function install_all {
         install_go
         install_archive_server_src
     fi
+    install_swift
     config_tsuru_post
     config_git_key
     add_git_envs
