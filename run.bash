@@ -436,7 +436,7 @@ function install_swift {
 
 function install_s3cmd {
     sudo apt-get install s3cmd -y
-    sudo -u git cat > ~git/.s3cfg <<END
+    cat > /tmp/s3cfg <<END
 [default]
 access_key = ${aws_access_key}
 bucket_location = US
@@ -482,6 +482,7 @@ website_endpoint = http://%(bucket)s.s3-website-%(location)s.amazonaws.com/
 website_error =
 website_index = index.html
 END
+    sudo mv /tmp/s3cfg ~git/.s3cfg
 }
 
 function config_git_key {
