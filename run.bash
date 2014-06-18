@@ -436,7 +436,7 @@ function install_swift {
 
 function install_s3cmd {
     sudo apt-get install s3cmd -y
-    sudo -u git cat > ~git/.s3cfg <END
+    sudo -u git cat > ~git/.s3cfg <<END
 [default]
 access_key = ${aws_access_key}
 bucket_location = US
