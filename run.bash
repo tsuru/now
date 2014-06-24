@@ -435,7 +435,7 @@ function install_swift {
 }
 
 function install_s3cmd {
-    sudo apt-get install s3cmd -y
+    sudo apt-get install s3cmd python-magic -y
     cat > /tmp/s3cfg <<END
 [default]
 access_key = ${aws_access_key}
