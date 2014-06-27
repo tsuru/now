@@ -432,7 +432,7 @@ function install_archive_server_src {
 
 function install_swift {
     sudo apt-get install python-pip -y
-    sudo pip install python-swiftclient
+    sudo pip install python-swiftclient python-keystoneclient
 }
 
 function install_s3cmd {
