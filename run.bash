@@ -194,11 +194,11 @@ function install_mongo {
         sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
         echo "deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen" | sudo tee /etc/apt/sources.list.d/mongodb.list > /dev/null
         sudo apt-get update -qq
-        sudo apt-get install mongodb-10gen -qqy
+        sudo apt-get install mongodb-org -qqy
         echo "nojournal = true" | sudo tee -a /etc/mongodb.conf > /dev/null
     fi
-    sudo stop mongodb 1>&2 2>/dev/null || true
-    sudo start mongodb
+    sudo stop mongod 1>&2 2>/dev/null || true
+    sudo start mongod
     mongoport=$(running_port mongod)
     if [[ $mongoport == "" ]]; then
         echo "Error: Couldn't find mongod port, please check /var/log/mongodb/mongodb.log for more information"
