@@ -371,11 +371,9 @@ function install_tsuru_pkg {
 
     sudo stop tsuru-ssh-agent >/dev/null 2>&1 || true
     sudo stop tsuru-server-api >/dev/null 2>&1 || true
-    sudo stop tsuru-server-collector >/dev/null 2>&1 || true
 
     sudo start tsuru-ssh-agent
     sudo start tsuru-server-api
-    sudo start tsuru-server-collector
 }
 
 function install_tsuru_src {
@@ -398,12 +396,10 @@ function install_tsuru_src {
     go get github.com/tsuru/tsuru/cmd/tsuru
 
     screen -X -S api quit || true
-    screen -X -S collector quit || true
     screen -X -S ssh quit || true
 
     local config_file=/etc/tsuru/tsuru.conf
     screen -S api -d -m tsr api --config=$config_file
-    screen -S collector -d -m tsr collector --config=$config_file
     screen -S ssh -d -m tsr docker-ssh-agent -l 0.0.0.0:4545 -u ubuntu -k /var/lib/tsuru/.ssh/id_rsa
 }
 
