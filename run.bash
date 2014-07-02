@@ -318,7 +318,7 @@ function add_as_docker_node {
 
 function add_initial_user {
     echo "Adding initial admin user..."
-    mongo tsurudb --eval 'db.teams.insert({_id: "admin"})'
+    mongo tsurudb --eval 'db.teams.update({_id: "admin"}, {_id: "admin"}, {upsert: true})'
     mongo tsurudb --eval "db.teams.update({_id: 'admin'}, {\$addToSet: {users: '${adminuser}'}})"
     curl -s -XPOST -d"{\"email\":\"${adminuser}\",\"password\":\"${adminpassword}\"}" http://${host_ip}:8080/users
     local token=$(curl -s -XPOST -d"{\"password\":\"${adminpassword}\"}" http://${host_ip}:8080/users/${adminuser}/tokens | jq -r .token)
