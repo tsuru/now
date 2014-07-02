@@ -195,7 +195,7 @@ function install_mongo {
         echo "deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen" | sudo tee /etc/apt/sources.list.d/mongodb.list > /dev/null
         sudo apt-get update -qq
         sudo apt-get install mongodb-org -qqy
-        echo "nojournal = true" | sudo tee -a /etc/mongodb.conf > /dev/null
+        echo "nojournal = true" | sudo tee -a /etc/mongod.conf > /dev/null
     fi
     sudo stop mongod 1>&2 2>/dev/null || true
     sudo start mongod
