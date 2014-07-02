@@ -164,7 +164,7 @@ function install_docker {
         sudo apt-get install lxc-docker -qqy
     fi
     local opts=$(bash -c 'source /etc/default/docker && echo $DOCKER_OPTS')
-    if [[ ! $opts =~ "tcp://" ]]; then
+    if [[ ! $opts =~ ":4243" ]]; then
         echo "Changing /etc/default/docker to listen on tcp://127.0.0.1:4243..."
         echo 'DOCKER_OPTS="$DOCKER_OPTS -H tcp://127.0.0.1:4243"' | sudo tee -a /etc/default/docker > /dev/null
     fi
