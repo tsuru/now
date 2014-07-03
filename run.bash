@@ -145,10 +145,10 @@ function check_support {
 
 function install_basic_deps {
     echo "Updating apt-get and installing basic dependencies (this could take a while)..."
-    sudo apt-get update -qq
+    sudo apt-get update
     sudo apt-get install jq screen curl mercurial git bzr redis-server python-software-properties -qqy
     sudo apt-add-repository ppa:tsuru/ppa -y >/dev/null 2>&1
-    sudo apt-get update -qq
+    sudo apt-get update
 }
 
 function install_docker {
