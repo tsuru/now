@@ -392,8 +392,8 @@ function install_tsuru_src {
         popd
     fi
     go get github.com/tsuru/tsuru/cmd/tsr
-    go get github.com/tsuru/tsuru/cmd/tsuru-admin
-    go get github.com/tsuru/tsuru/cmd/tsuru
+    go get github.com/tsuru/tsuru-admin
+    go get github.com/tsuru/tsuru-client/tsuru
 
     screen -X -S api quit || true
     screen -X -S ssh quit || true
