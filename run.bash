@@ -156,13 +156,7 @@ function install_docker {
         curl -s https://get.docker.io/gpg | sudo apt-key add -
         echo "deb http://get.docker.io/ubuntu docker main" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
         sudo apt-get update -qq
-        set +e
-        sudo apt-get install docker.io -qqy
-        local ret=$?
-        set -e
-        if [ $ret -ne 0 ]; then
-            sudo apt-get install lxc-docker -qqy
-        fi
+        sudo apt-get install lxc-docker -qqy
     fi
     local opts=$(bash -c 'source /etc/default/docker && echo $DOCKER_OPTS')
     if [[ ! $opts =~ ":4243" ]]; then
