@@ -180,7 +180,7 @@ function install_docker {
 }
 
 function install_mongo {
-    sudo apt-get remove --purge mongodb-10gen -qqy
+    sudo apt-get remove --purge mongodb-10gen -qqy || true
     local version=$(mongod --version | grep "db version" | sed s/^.*v//)
     local iversion=$(installed_version mongo 2.4.0 $version)
     if [[ $iversion != "" ]]; then
