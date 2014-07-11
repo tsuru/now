@@ -92,7 +92,7 @@ function running_port {
 
 function running_addr {
     local appname=$1
-    for counter in {1..10}; do
+    for counter in {1..30}; do
         sleep 0.5
         local addr=$(sudo netstat -tnlp | grep $appname | tr -s " " | cut -d' ' -f 4 | sort | head -n1)
         if [[ $addr != "" ]]; then
@@ -131,11 +131,6 @@ function set_host {
 }
 
 function check_support {
-    if [ `id -u` == "0" ]; then
-        echo -e "Error: You should NOT run this script as root, it'll sudo commands as needed."
-        exit 1
-    fi
-
     which apt-get > /dev/null
     if [ $? -ne 0 ]; then
         echo "Error: apt-get should be available on the system"
@@ -153,7 +148,7 @@ function install_basic_deps {
 
 function install_docker {
     local version=$(docker version 2>/dev/null | grep "Client version" | cut -d" " -f3)
-    local iversion=$(installed_version docker 0.9.0 $version)
+    local iversion=$(installed_version docker 0.20.0 $version)
     if [[ $iversion != "" ]]; then
         echo "Skipping docker installation, version installed: $iversion"
     else
@@ -161,12 +156,18 @@ function install_docker {
         curl -s https://get.docker.io/gpg | sudo apt-key add -
         echo "deb http://get.docker.io/ubuntu docker main" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
         sudo apt-get update -qq
-        sudo apt-get install lxc-docker -qqy
+        set +e
+        sudo apt-get install docker.io -qqy
+        local ret=$?
+        set -e
+        if [ $ret -ne 0 ]; then
+            sudo apt-get install lxc-docker -qqy
+        fi
     fi
     local opts=$(bash -c 'source /etc/default/docker && echo $DOCKER_OPTS')
     if [[ ! $opts =~ ":4243" ]]; then
         echo "Changing /etc/default/docker to listen on tcp://127.0.0.1:4243..."
-        echo 'DOCKER_OPTS="$DOCKER_OPTS -H tcp://127.0.0.1:4243"' | sudo tee -a /etc/default/docker > /dev/null
+        echo 'DOCKER_OPTS="$DOCKER_OPTS -H tcp://0.0.0.0:4243"' | sudo tee -a /etc/default/docker > /dev/null
     fi
     sudo stop docker 1>&2 2>/dev/null || true
     sudo start docker
@@ -185,6 +186,7 @@ function install_docker {
 }
 
 function install_mongo {
+    sudo apt-get remove --purge mongodb-10gen -qqy
     local version=$(mongod --version | grep "db version" | sed s/^.*v//)
     local iversion=$(installed_version mongo 2.4.0 $version)
     if [[ $iversion != "" ]]; then
@@ -239,6 +241,7 @@ function install_gandalf {
         exit 1
     fi
     echo "gandalf found running at $gandalfaddr"
+    mkdir -p ~/.ssh
     echo -e "Host ${host_ip}\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
     sudo stop git-daemon 1>&2 2>/dev/null || true
     sudo start git-daemon
@@ -509,6 +512,9 @@ function install_all {
     install_basic_deps
     set_host
     install_docker
+    if [[ ${install_docker_only-} == "1" ]]; then
+        exit 0
+    fi
     install_mongo
     install_hipache
     install_gandalf
@@ -595,6 +601,9 @@ while [ "${1-}" != "" ]; do
         "--aws-secret-key")
             shift
             aws_secret_key=$1
+            ;;
+        "--docker-only")
+            install_docker_only=1
             ;;
     esac
     shift
