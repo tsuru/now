@@ -197,7 +197,7 @@ function install_mongo {
     sudo start mongod
     mongoport=$(running_port mongod)
     if [[ $mongoport == "" ]]; then
-        echo "Error: Couldn't find mongod port, please check /var/log/mongodb/mongodb.log for more information"
+        echo "Error: Couldn't find mongod port, please check /var/log/mongodb/mongod.log for more information"
         exit 1
     fi
     echo "mongodb found running at $mongohost:$mongoport"
@@ -533,10 +533,14 @@ function install_all {
     add_git_envs
     add_as_docker_node
     add_initial_user
-    install_dashboard
+    if [[ ${l-} != "1" ]]; then
+        install_dashboard
+    fi
 
     local cont_id=$(docker ps | grep tsuru-dashboard | cut -d ' ' -f 1)
-    local dashboard_port=$(docker inspect $cont_id | grep HostPort  | head -n1 | sed "s/[^0-9]//g")
+    if [[ ${without_dashboard-} != "1" ]]; then
+        local dashboard_port=$(docker inspect $cont_id | grep HostPort  | head -n1 | sed "s/[^0-9]//g")
+    fi
     echo '######################## DONE! ########################'
     echo
     echo "Some information about your tsuru installation:"
@@ -544,15 +548,17 @@ function install_all {
     echo "Admin user: ${adminuser}"
     echo "Admin password: ${adminpassword} (PLEASE CHANGE RUNNING: tsuru change-password)"
     echo "Target address: $host_ip:8080"
-    echo "Dashboard address: $host_ip:$dashboard_port"
-    echo
-    echo "To use Tsuru router you should have a DNS entry *.$host_name -> $host_ip"
-    echo
-    echo "You should run \`source ~/.bashrc\` on your current terminal."
-    echo
-    echo "Installed apps:"
-    sleep 1
-    tsuru app-list
+    if [[ ${without_dashboard-} != "1" ]]; then
+        echo "Dashboard address: $host_ip:$dashboard_port"
+        echo
+        echo "To use Tsuru router you should have a DNS entry *.$host_name -> $host_ip"
+        echo
+        echo "You should run \`source ~/.bashrc\` on your current terminal."
+        echo
+        echo "Installed apps:"
+        sleep 1
+        tsuru app-list
+    fi
 }
 
 while [ "${1-}" != "" ]; do
@@ -598,6 +604,9 @@ while [ "${1-}" != "" ]; do
             ;;
         "--docker-only")
             install_docker_only=1
+            ;;
+        "--without-dashboard")
+            without_dashboard=1
             ;;
     esac
     shift
