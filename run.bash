@@ -68,7 +68,6 @@ docker:
   repository-namespace: tsuru
   router: hipache
   deploy-cmd: /var/lib/tsuru/deploy
-  ssh-agent-port: 4545
   segregate: true
   scheduler:
     redis-server: 127.0.0.1:6379
@@ -78,7 +77,6 @@ docker:
     port: "8888"
   ssh:
     add-key-cmd: /var/lib/tsuru/add-key
-    public-key: /var/lib/tsuru/.ssh/id_rsa.pub
     user: ubuntu
 EOF
 )
@@ -248,18 +246,6 @@ function install_gandalf {
 
 }
 
-function generate_key {
-    if [[ -e /var/lib/tsuru/.ssh/id_rsa ]]; then
-        echo "SSH key for tsuru already exist at /var/lib/tsuru/.ssh/id_rsa"
-    else
-        echo "Creating SSH key for tsuru at /var/lib/tsuru/.ssh/id_rsa"
-        sudo mkdir -p /var/lib/tsuru/.ssh
-        yes | sudo ssh-keygen -t rsa -b 4096 -N "" -f /var/lib/tsuru/.ssh/id_rsa > /dev/null
-        local user_name=$(id -un)
-        sudo chown -R $user_name:$user_name /var/lib/tsuru
-    fi
-}
-
 function install_go {
     local version=$(go version | sed "s/go version[^0-9]*\([0-9.]*\).*/\1/")
     local iversion=$(installed_version go 1.1.0 $version)
@@ -318,10 +304,10 @@ function add_initial_user {
 }
 
 function add_as_docker_node {
+    echo "Adding docker node to pool..."
     tsuru-admin docker-pool-add theonepool || true
     tsuru-admin docker-node-add --register address=http://$dockerhost:$dockerport pool=theonepool || true
 }
-
 
 function install_dashboard {
     echo "Installing tsuru-dashboard..."
@@ -394,11 +380,14 @@ function install_tsuru_src {
     go get github.com/tsuru/tsuru-client/tsuru
 
     screen -X -S api quit || true
-    screen -X -S ssh quit || true
+    screen -S api -d -m tsr api --config=/etc/tsuru/tsuru.conf
 
-    local config_file=/etc/tsuru/tsuru.conf
-    screen -S api -d -m tsr api --config=$config_file
-    screen -S ssh -d -m tsr docker-ssh-agent -l 0.0.0.0:4545 -u ubuntu -k /var/lib/tsuru/.ssh/id_rsa
+    local tsraddr=$(running_addr tsr)
+    if [[ $tsraddr == "" ]]; then
+        echo "Error: Couldn't find tsr api addr, please check /var/log/syslog for more information"
+        exit 1
+    fi
+    echo "tsr api found running at $tsraddr"
 }
 
 function install_archive_server_src {
@@ -513,7 +502,6 @@ function install_all {
     install_mongo
     install_hipache
     install_gandalf
-    generate_key
     config_tsuru_pre
     if [[ ${install_tsuru_pkg-} == "1" ]]; then
         install_tsuru_pkg
@@ -534,14 +522,10 @@ function install_all {
     add_git_envs
     add_initial_user
     add_as_docker_node
-    if [[ ${l-} != "1" ]]; then
+    if [[ ${without_dashboard-} != "1" ]]; then
         install_dashboard
     fi
 
-    local cont_id=$(docker ps | grep tsuru-dashboard | cut -d ' ' -f 1)
-    if [[ ${without_dashboard-} != "1" ]]; then
-        local dashboard_port=$(docker inspect $cont_id | grep HostPort  | head -n1 | sed "s/[^0-9]//g")
-    fi
     echo '######################## DONE! ########################'
     echo
     echo "Some information about your tsuru installation:"
@@ -550,6 +534,8 @@ function install_all {
     echo "Admin password: ${adminpassword} (PLEASE CHANGE RUNNING: tsuru change-password)"
     echo "Target address: $host_ip:8080"
     if [[ ${without_dashboard-} != "1" ]]; then
+        local cont_id=$(docker ps | grep tsuru-dashboard | cut -d ' ' -f 1)
+        local dashboard_port=$(docker inspect $cont_id | grep HostPort  | head -n1 | sed "s/[^0-9]//g")
         echo "Dashboard address: $host_ip:$dashboard_port"
         echo
         echo "To use Tsuru router you should have a DNS entry *.$host_name -> $host_ip"
