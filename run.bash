@@ -12,7 +12,7 @@ host_name="tsuru-sample.com"
 mongohost="127.0.0.1"
 mongoport="27017"
 dockerhost="127.0.0.1"
-dockerport="4243"
+dockerport="2375"
 adminuser="admin@example.com"
 adminpassword="admin123"
 install_archive_server=0
@@ -159,9 +159,9 @@ function install_docker {
         sudo apt-get install lxc-docker -qqy
     fi
     local opts=$(bash -c 'source /etc/default/docker && echo $DOCKER_OPTS')
-    if [[ ! $opts =~ ":4243" ]]; then
-        echo "Changing /etc/default/docker to listen on tcp://127.0.0.1:4243..."
-        echo 'DOCKER_OPTS="$DOCKER_OPTS -H tcp://0.0.0.0:4243"' | sudo tee -a /etc/default/docker > /dev/null
+    if [[ ! $opts =~ "://" ]]; then
+        echo "Changing /etc/default/docker to listen on tcp://0.0.0.0:${dockerport}..."
+        echo "DOCKER_OPTS=\"\$DOCKER_OPTS -H tcp://0.0.0.0:${dockerport}\"" | sudo tee -a /etc/default/docker > /dev/null
     fi
     sudo stop docker 1>&2 2>/dev/null || true
     sudo start docker
@@ -308,11 +308,6 @@ function config_tsuru_post {
     tsuru-admin target-set default
 }
 
-function add_as_docker_node {
-    mongo tsurudb --eval "db.docker_scheduler.insert({_id: 'theonepool'})"
-    mongo tsurudb --eval "db.docker_scheduler.update({_id: 'theonepool'}, {\$addToSet: {nodes: 'http://$dockerhost:$dockerport'}})"
-}
-
 function add_initial_user {
     echo "Adding initial admin user..."
     mongo tsurudb --eval 'db.teams.update({_id: "admin"}, {_id: "admin"}, {upsert: true})'
@@ -321,6 +316,12 @@ function add_initial_user {
     local token=$(curl -s -XPOST -d"{\"password\":\"${adminpassword}\"}" http://${host_ip}:8080/users/${adminuser}/tokens | jq -r .token)
     echo $token > ~/.tsuru_token
 }
+
+function add_as_docker_node {
+    tsuru-admin docker-pool-add theonepool || true
+    tsuru-admin docker-node-add --register address=http://$dockerhost:$dockerport pool=theonepool || true
+}
+
 
 function install_dashboard {
     echo "Installing tsuru-dashboard..."
@@ -531,8 +532,8 @@ function install_all {
     config_tsuru_post
     config_git_key
     add_git_envs
-    add_as_docker_node
     add_initial_user
+    add_as_docker_node
     if [[ ${l-} != "1" ]]; then
         install_dashboard
     fi
