@@ -319,12 +319,12 @@ function install_dashboard {
     if [[ $has_plat == "" ]]; then
         tsuru-admin platform-add python --dockerfile https://raw.githubusercontent.com/tsuru/basebuilder/master/python/Dockerfile
     fi
-    local platform_ok=$(docker run --rm tsuru/python bash -c "circusd --daemon /etc/circus/circus.ini && sleep 2 && ps aux | grep circusd | grep -v grep")
+    local platform_ok=$(docker run --rm tsuru/python bash -c 'source /var/lib/tsuru/config && ${VENV_DIR}/bin/circusd --daemon /etc/circus/circus.ini && sleep 2 && ps aux | grep circusd | grep -v grep')
     if [[ $platform_ok == "" ]]; then
         # Circusd bugged version, rebuilding platform
         tsuru-admin platform-update python --dockerfile https://raw.githubusercontent.com/tsuru/basebuilder/master/python/Dockerfile
     fi
-    local platform_ok=$(docker run --rm tsuru/python bash -c "circusd --daemon /etc/circus/circus.ini && sleep 2 && ps aux | grep circusd | grep -v grep")
+    local platform_ok=$(docker run --rm tsuru/python bash -c 'source /var/lib/tsuru/config && ${VENV_DIR}/bin/circusd --daemon /etc/circus/circus.ini && sleep 2 && ps aux | grep circusd | grep -v grep')
     if [[ $platform_ok == "" ]]; then
         echo "Error trying to start circus inside python docker image. Please report this as a bug in https://github.com/tsuru/now/issues"
         echo "Additional information:"
