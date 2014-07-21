@@ -301,6 +301,10 @@ function add_initial_user {
     curl -s -XPOST -d"{\"email\":\"${adminuser}\",\"password\":\"${adminpassword}\"}" http://${host_ip}:8080/users
     local token=$(curl -s -XPOST -d"{\"password\":\"${adminpassword}\"}" http://${host_ip}:8080/users/${adminuser}/tokens | jq -r .token)
     echo $token > ~/.tsuru_token
+    if [[ ! -e ~/.ssh/id_rsa ]]; then
+        yes | ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa > /dev/null
+    fi
+    tsuru key-add || true
 }
 
 function add_as_docker_node {
@@ -311,10 +315,6 @@ function add_as_docker_node {
 
 function install_dashboard {
     echo "Installing tsuru-dashboard..."
-    if [[ ! -e ~/.ssh/id_rsa ]]; then
-        yes | ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa > /dev/null
-    fi
-    tsuru key-add || true
     has_plat=`(tsuru platform-list | grep python) || true`
     if [[ $has_plat == "" ]]; then
         tsuru-admin platform-add python --dockerfile https://raw.githubusercontent.com/tsuru/basebuilder/master/python/Dockerfile
