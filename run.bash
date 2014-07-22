@@ -169,6 +169,8 @@ function install_docker {
     dockerport=$(running_port docker)
     if [[ $dockerport == "" ]]; then
         echo "Error: Couldn't find docker port, please check /var/log/upstart/docker.log for more information"
+        echo "/var/log/upstart/docker.log contents:"
+        cat /var/log/upstart/docker.log
         exit 1
     fi
     echo "docker found running at $dockerhost:$dockerport"
@@ -212,6 +214,8 @@ function install_hipache {
     local addr=$(running_addr node)
     if [[ $addr == "" ]]; then
         echo "Error: Couldn't find hipache addr, please check /var/log/upstart/hipache.log for more information"
+        echo "/var/log/upstart/hipache.log contents:"
+        cat /var/log/upstart/hipache.log
         exit 1
     fi
     echo "node hipache found running at $addr"
@@ -233,6 +237,8 @@ function install_gandalf {
     local gandalfaddr=$(running_addr gandalf)
     if [[ $gandalfaddr == "" ]]; then
         echo "Error: Couldn't find gandalf addr, please check /var/log/upstart/gandalf-server.log for more information"
+        echo "/var/log/upstart/gandalf-server.log contents:"
+        cat /var/log/upstart/gandalf-server.log
         exit 1
     fi
     echo "gandalf found running at $gandalfaddr"
