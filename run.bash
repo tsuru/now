@@ -8,7 +8,7 @@ set -u
 set -e
 
 host_ip=""
-host_name="tsuru-sample.com"
+host_name=""
 mongohost="127.0.0.1"
 mongoport="27017"
 dockerhost="127.0.0.1"
@@ -129,6 +129,11 @@ function set_host {
         exit 1
     fi
     echo "Chosen host ip: $host_ip. You can override with --host-ip <external ip>"
+
+    if [[ $host_name == "" ]]; then
+        host_name="$host_ip.xip.io"
+    fi
+    echo "Chosen host name: $host_name. You can override with --host-ip <external ip>"
 }
 
 function check_support {
