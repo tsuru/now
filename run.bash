@@ -423,7 +423,7 @@ function install_archive_server_src {
 }
 
 function install_swift {
-    sudo apt-get install python-pip python-dev libxml2-dev libxslt-dev -y
+    sudo apt-get install python-pip python-dev libxml2-dev libxslt-dev libz-dev -y
     sudo pip install python-swiftclient python-keystoneclient
 }
 
