@@ -133,7 +133,7 @@ function set_host {
     if [[ $host_name == "" ]]; then
         host_name="$host_ip.xip.io"
     fi
-    echo "Chosen host name: $host_name. You can override with --host-ip <external ip>"
+    echo "Chosen host name: $host_name. You can override with --host-name <hostname>"
 }
 
 function check_support {
