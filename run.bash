@@ -552,8 +552,6 @@ function install_all {
         local dashboard_port=$(docker inspect $cont_id | grep HostPort  | head -n1 | sed "s/[^0-9]//g")
         echo "Dashboard address: $host_ip:$dashboard_port"
         echo
-        echo "To use Tsuru router you should have a DNS entry *.$host_name -> $host_ip"
-        echo
         echo "You should run \`source ~/.bashrc\` on your current terminal."
         echo
         echo "Installed apps:"
