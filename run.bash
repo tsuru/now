@@ -562,53 +562,80 @@ function install_all {
     fi
 }
 
+function show_help {
+    PROGRAM_NAME=$(basename $0)
+    echo -e "Usage: $PROGRAM_NAME [options]
+
+Options:
+
+ -n, --host-name [name]         Set the VM's hostname
+ -i, --host-ip [name]           Set the VM's IP
+ -p, --tsuru-pkg                Install tsuru from packages   (default: from source)
+ -f, --force-install [pkg]      Force installation of named package
+ -a, --archive-server           Install the archive server
+ -u, --hook-url [url]           Git hook URL
+ -o, --hook-name [name]         Git hook name
+ -e, --env [key] [value]        Set environment variable for git user in the VM
+ -k, --aws-access-key [key]     Set the AWS access key
+ -s, --aws-secret-key [key]     Set the AWS secret key
+ -d, --docker-only              Only install docker          (default: docker, dashboard)
+ -w, --without-dashboard        Install without dashboard    (default: with dashboard)
+
+ -h, --help                     This help screen
+"
+}
+
 while [ "${1-}" != "" ]; do
     case $1 in
-        "--host-name")
+        "-n" | "--host-name")
             shift
             host_name=$1
             ;;
-        "--host-ip")
+        "-i" | "--host-ip")
             shift
             host_ip=$1
             ;;
-        "--tsuru-pkg")
+        "-p" | "--tsuru-pkg")
             install_tsuru_pkg=1
             ;;
-        "-f" | "--force-install")
+        "-f" | "" | "--force-install")
             shift
             declare "force_install_$1=1"
             ;;
-        "--archive-server")
+        "-a" | "--archive-server")
             install_archive_server=1
             ;;
-        "--hook-url")
+        "-u" | "--hook-url")
             shift
             hook_url=$1
             ;;
-        "--hook-name")
+        "-o" | "--hook-name")
             shift
             hook_name=$1
             ;;
-        "--env")
+        "-e" | "--env")
             shift
             git_envs=("${git_envs[@]}" "$1=\"$2\"")
             shift
             ;;
-        "--aws-access-key")
+        "-k" | "--aws-access-key")
             shift
             aws_access_key=$1
             ;;
-        "--aws-secret-key")
+        "-s" | "--aws-secret-key")
             shift
             aws_secret_key=$1
             ;;
-        "--docker-only")
+        "-d" | "--docker-only")
             install_docker_only=1
             ;;
-        "--without-dashboard")
+        "-w" | "--without-dashboard")
             without_dashboard=1
             ;;
+        * | "-h" | "--help")
+            show_help
+            ;;
+
     esac
     shift
 done
