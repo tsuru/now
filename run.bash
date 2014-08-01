@@ -116,7 +116,7 @@ function installed_version {
 
 function set_host {
     if [[ $host_ip == "" ]]; then
-        host_ip=$(curl -s -L -m2 http://169.254.169.254/latest/meta-data/public-hostname || true)
+        host_ip=$(curl -s -L -m2 http://169.254.169.254/latest/meta-data/public-ipv4 || true)
     fi
     if [[ $host_ip == "" ]]; then
         host_ip=$(ifconfig | grep -A1 eth | grep "inet addr" | tail -n1 | sed "s/[^0-9]*\([0-9.]*\).*/\1/")
