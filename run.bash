@@ -598,7 +598,7 @@ while [ "${1-}" != "" ]; do
         "-p" | "--tsuru-pkg")
             install_tsuru_pkg=1
             ;;
-        "-f" | "" | "--force-install")
+        "-f" | "--force-install")
             shift
             declare "force_install_$1=1"
             ;;
