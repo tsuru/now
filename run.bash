@@ -69,9 +69,10 @@ docker:
   router: hipache
   deploy-cmd: /var/lib/tsuru/deploy
   segregate: true
-  scheduler:
-    redis-server: 127.0.0.1:6379
-    redis-prefix: docker-cluster
+  cluster:
+    storage: mongodb
+    mongo-url: {{{MONGO_HOST}}}:{{{MONGO_PORT}}}
+    mongo-database: dockercluster
   run-cmd:
     bin: /var/lib/tsuru/start
     port: "8888"
