@@ -124,6 +124,9 @@ function set_host {
     if [[ $host_ip == "" ]]; then
         host_ip=$(ifconfig | grep -A1 venet0 | grep "inet addr" | tail -n1 | sed "s/[^0-9]*\([0-9.]*\).*/\1/")
     fi
+    if [[ $host_ip == "" ]]; then
+        host_ip=$(ifconfig | grep -A1 wlan | grep "inet addr" | tail -n1 | sed "s/[^0-9]*\([0-9.]*\).*/\1/")
+    fi
     if [[ $host_ip == "" || $host_ip == "127.0.0.1" ]]; then
         echo "Couldn't find suitable host_ip, please run with --host-ip <external ip>"
         exit 1
