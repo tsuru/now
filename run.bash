@@ -636,6 +636,7 @@ while [ "${1-}" != "" ]; do
             ;;
         * | "-h" | "--help")
             show_help
+            exit
             ;;
 
     esac
