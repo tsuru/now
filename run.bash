@@ -406,18 +406,10 @@ function install_tsuru_src {
     echo "tsr api found running at $tsraddr"
 }
 
-function install_archive_server_src {
-    echo "Installing archive-server from source..."
-    if [[ -e $GOPATH/src/github.com/tsuru/archive-server ]]; then
-        pushd $GOPATH/src/github.com/tsuru/archive-server
-        git reset --hard && git clean -dfx && git pull
-        popd
-    fi
-    go get github.com/tsuru/archive-server
+function install_archive_server_pkg {
+    sudo apt-get install archive-server -qqy
 
-    screen -X -S archiveserver quit || true
-    sudo mkdir -p /var/lib/archives
-    sudo chown `id -nu`:`id -ng` /var/lib/archives
+    sudo stop archive-server || true
 
     local archive_server_read=$(bash -ic 'source ~git/.bash_profile && echo $ARCHIVE_SERVER_READ')
     if [[ $archive_server_read != "http://${host_ip}:6161" ]]; then
@@ -426,7 +418,8 @@ function install_archive_server_src {
         echo "export ARCHIVE_SERVER_WRITE=http://127.0.0.1:6161" | sudo tee -a ~git/.bash_profile > /dev/null
     fi
 
-    screen -S archiveserver -d -m archive-server -read-http=0.0.0.0:6060 -write-http=127.0.0.1:6161 -dir=/var/lib/archives
+    echo 'export ARCHIVE_SERVER_OPTS="-dir=/var/lib/archive-server/archives -read-http=0.0.0.0:6060 -write-http=127.0.0.1:6161"' | sudo tee -a /etc/default/archive-server > /dev/null 2>&1
+    sudo start archive-server
 }
 
 function install_swift {
@@ -526,8 +519,7 @@ function install_all {
         install_tsuru_src
     fi
     if [[ ${install_archive_server} == "1" ]]; then
-        install_go
-        install_archive_server_src
+        install_archive_server_pkg
     fi
     install_swift
     if [[ ${aws_access_key} != "" && ${aws_secret_key} != "" ]]; then
