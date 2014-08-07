@@ -371,10 +371,8 @@ function install_tsuru_pkg {
     echo "Installing Tsuru from deb package..."
     sudo apt-get install tsuru-server tsuru-admin tsuru-client -qqy
 
-    sudo stop tsuru-ssh-agent >/dev/null 2>&1 || true
     sudo stop tsuru-server-api >/dev/null 2>&1 || true
-
-    sudo start tsuru-ssh-agent
+    config_tsuru_pre
     sudo start tsuru-server-api
 }
 
@@ -520,10 +518,10 @@ function install_all {
     install_mongo
     install_hipache
     install_gandalf
-    config_tsuru_pre
     if [[ ${install_tsuru_pkg-} == "1" ]]; then
         install_tsuru_pkg
     else
+        config_tsuru_pre
         install_go
         install_tsuru_src
     fi
