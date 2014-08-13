@@ -459,7 +459,7 @@ function install_tsuru_src {
 function install_archive_server_pkg {
     sudo apt-get install archive-server -y
 
-    sudo stop archive-server || true
+    sudo service archive-server stop || true
 
     local archive_server_read=$(bash -ic 'source ~git/.bash_profile && echo $ARCHIVE_SERVER_READ')
     if [[ $archive_server_read != "http://${host_ip}:6161" ]]; then
@@ -469,7 +469,7 @@ function install_archive_server_pkg {
     fi
 
     echo 'export ARCHIVE_SERVER_OPTS="-dir=/var/lib/archive-server/archives -read-http=0.0.0.0:6060 -write-http=127.0.0.1:6161"' | sudo tee -a /etc/default/archive-server > /dev/null 2>&1
-    sudo start archive-server
+    sudo service archive-server start
 }
 
 function install_swift {
