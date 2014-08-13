@@ -14,6 +14,7 @@ host_ip=""
 host_name=""
 set_interface=""
 is_debug=""
+set_interface=""
 docker_pool="theonepool"
 mongohost="127.0.0.1"
 mongoport="27017"
@@ -40,7 +41,7 @@ declare -A DISTMAP=(
 TSURU_CONF=$(cat <<EOF
 listen: "0.0.0.0:8080"
 admin-listen: "127.0.0.1:8888"
-host: http://0.0.0.0:8080
+host: http://{{{HOST_IP}}}:8080
 debug: true
 admin-team: admin
 
@@ -631,7 +632,8 @@ Options:
                                 use ifconfig to set up an interface so it can be reached
      --debug                    Print debug messages
      --docker-pool [name]       Add docker to distination pool of tsuru (default: theonepool)
-     --dockerfile-python [url]  Override the original dockerfile for python
+     --set-interface            The VM's IP provided by --host-ip is a temporary IP,
+                                use ifconfig to set up an interface for it
 
  -h, --help                     This help screen
 "
@@ -647,7 +649,11 @@ while [ "${1-}" != "" ]; do
             is_debug=1
             ;;
         "--docker-pool")
+            shift
             docker_pool=$1
+            ;;
+        "--set-interface")
+            set_interface="y"
             ;;
         "-n" | "--host-name")
             shift
