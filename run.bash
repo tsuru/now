@@ -289,6 +289,7 @@ function install_gandalf {
     sudo chmod +x ${hook_dir}/${hook_name}
     sudo chown -R git:git /home/git/bare-template
     sudo sed "s/^\(host: \).*$/\1${host_name}/" /etc/gandalf.conf -i
+    sudo sed "s/^#\(\s*template: \).*$/\1\/home\/git\/bare-template/" /etc/gandalf.conf -i
     sudo service gandalf-server stop 1>&2 2>/dev/null || true
     sudo service gandalf-server start
     sleep 5
