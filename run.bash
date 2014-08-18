@@ -9,6 +9,7 @@ set -e
 
 host_ip=""
 host_name=""
+set_interface=""
 mongohost="127.0.0.1"
 mongoport="27017"
 dockerhost="127.0.0.1"
@@ -116,6 +117,9 @@ function installed_version {
 #############################################################################
 
 function set_host {
+    if [[ "$host_ip" && "$set_interface" ]]; then
+        sudo ifconfig lo:0 $host_ip netmask 255.255.255.255 up
+    fi
     if [[ $host_ip == "" ]]; then
         host_ip=$(curl -s -L -m2 http://169.254.169.254/latest/meta-data/public-ipv4 || true)
     fi
@@ -572,6 +576,8 @@ Options:
  -s, --aws-secret-key [key]     Set the AWS secret key
  -d, --docker-only              Only install docker          (default: docker, dashboard)
  -w, --without-dashboard        Install without dashboard    (default: with dashboard)
+ -I, --set-interface            The IP provided by --host-ip is not really allocated to this VM,
+                                use ifconfig to set up an interface so it can be reached
 
  -h, --help                     This help screen
 "
@@ -579,6 +585,9 @@ Options:
 
 while [ "${1-}" != "" ]; do
     case $1 in
+        "-I" | "--set-interface")
+            set_interface="y"
+            ;;
         "-n" | "--host-name")
             shift
             host_name=$1
