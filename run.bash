@@ -170,8 +170,10 @@ function install_basic_deps {
     echo "Updating apt-get and installing basic dependencies (this could take a while)..."
     if [[ $distid == "Debian" && $release > 7 && $release < 8 ]]; then
         if ! apt-cache policy | grep "l=Debian Backports" > /dev/null; then
-            echo 'deb http://http.debian.net/debian wheezy-backports main' | sudo tee /etc/apt/sources.list.d/backports.list
+            echo 'deb http://http.debian.net/debian wheezy-backports main contrib non-free' | sudo tee /etc/apt/sources.list.d/backports.list
         fi
+        sudo apt-get update -qq
+        sudo apt-get install virtualbox-guest-utils virtualbox-guest-dkms linux-image-amd64 linux-headers-amd64 -qqy -t wheezy-backports
     fi
     sudo apt-get update
     sudo apt-get install jq screen curl mercurial git bzr redis-server software-properties-common -y
