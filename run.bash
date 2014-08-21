@@ -14,7 +14,9 @@ host_ip=""
 host_name=""
 set_interface=""
 is_debug=""
+docker_node=""
 set_interface=""
+install_func=install_all
 docker_pool="theonepool"
 mongohost="127.0.0.1"
 mongoport="27017"
@@ -231,6 +233,7 @@ function install_docker {
         echo -e "export DOCKER_HOST=tcp://$dockerhost:$dockerport" | tee -a ~/.bashrc > /dev/null
     fi
     export DOCKER_HOST=tcp://$dockerhost:$dockerport
+    docker_node="$docker_node $DOCKER_HOST"
 }
 
 function install_mongo {
@@ -376,7 +379,33 @@ function add_initial_user {
 function add_as_docker_node {
     echo "Adding docker node to pool..."
     tsuru-admin docker-pool-add $docker_pool 2>/dev/null || true
-    tsuru-admin docker-node-add --register address=http://$dockerhost:$dockerport pool=$docker_pool  2>/dev/null || true
+    for node in $docker_node; do
+        tsuru-admin docker-node-add --register address=http://$node pool=$docker_pool 2>/dev/null || true
+    done
+}
+
+function install_platform {
+    echo "Installing platform container..."
+    local has_plat=`(tsuru platform-list | grep $1$) || true`
+    local dockerfile="https://raw.githubusercontent.com/tsuru/basebuilder/master/$1/Dockerfile"
+    if [[ $has_plat == "" ]]; then
+        tsuru-admin platform-add $1 --dockerfile $dockerfile
+    fi
+    local platform_ok=$(docker run --rm tsuru/$1 bash -c 'source /var/lib/tsuru/config && ${VENV_DIR}/bin/circusd --daemon /etc/circus/circus.ini && sleep 2 && ps aux | grep circusd | grep -v grep')
+    if [[ $platform_ok == "" ]]; then
+        # Circusd bugged version, rebuilding platform
+        tsuru-admin platform-update $1 --dockerfile $dockerfile
+    fi
+    local platform_ok=$(docker run --rm tsuru/$1 bash -c 'source /var/lib/tsuru/config && ${VENV_DIR}/bin/circusd --daemon /etc/circus/circus.ini && sleep 2 && ps aux | grep circusd | grep -v grep')
+    if [[ $platform_ok == "" ]]; then
+        echo "Error trying to start circus inside $1 docker image. Please report this as a bug in https://github.com/tsuru/now/issues"
+        echo "Additional information:"
+        uname -a
+        docker version
+        echo "Tsuru hash: "
+        git --git-dir ~/go/src/github.com/tsuru/tsuru/.git log | head -n1
+        exit 1
+    fi
 }
 
 function install_dashboard {
@@ -384,21 +413,7 @@ function install_dashboard {
     has_plat=`(tsuru platform-list | grep python) || true`
     local dockerfile="https://raw.githubusercontent.com/tsuru/basebuilder/master/python/Dockerfile"
     if [[ $has_plat == "" ]]; then
-        tsuru-admin platform-add python --dockerfile $dockerfile
-    fi
-    local platform_ok=$(docker run --rm tsuru/python bash -c 'source /var/lib/tsuru/config && ${VENV_DIR}/bin/circusd --daemon /etc/circus/circus.ini && sleep 2 && ps aux | grep circusd | grep -v grep')
-    if [[ $platform_ok == "" ]]; then
-        # Circusd bugged version, rebuilding platform
-        tsuru-admin platform-update python --dockerfile $dockerfile
-    fi
-    local platform_ok=$(docker run --rm tsuru/python bash -c 'source /var/lib/tsuru/config && ${VENV_DIR}/bin/circusd --daemon /etc/circus/circus.ini && sleep 2 && ps aux | grep circusd | grep -v grep')
-    if [[ $platform_ok == "" ]]; then
-        echo "Error trying to start circus inside python docker image. Please report this as a bug in https://github.com/tsuru/now/issues"
-        echo "Additional information:"
-        uname -a
-        docker version
-        echo "Tsuru hash: "
-        git --git-dir ~/go/src/github.com/tsuru/tsuru/.git log | head -n1
+        echo "Error trying to install dashboard. The python platform is not installed"
         exit 1
     fi
     tsuru app-create tsuru-dashboard python || true
@@ -425,6 +440,11 @@ function install_tsuru_pkg {
     sudo service tsuru-server-api start
 
     sleep 5
+}
+
+function install_tsuru_client {
+    echo "Installing Tsuru admin & client from deb package..."
+    sudo apt-get install tsuru-admin tsuru-client -qqy
 }
 
 function install_tsuru_src {
@@ -559,9 +579,6 @@ function install_all {
     install_basic_deps ${tsuru_ppa_source-"nightly"}
     set_host
     install_docker
-    if [[ ${install_docker_only-} == "1" ]]; then
-        exit 0
-    fi
     install_mongo
     install_hipache
     install_gandalf
@@ -584,6 +601,7 @@ function install_all {
     add_git_envs
     add_initial_user
     add_as_docker_node
+    install_platform python
     if [[ ${without_dashboard-} != "1" ]]; then
         install_dashboard
     fi
@@ -606,6 +624,85 @@ function install_all {
         sleep 1
         tsuru app-list
     fi
+}
+
+function install_server {
+    check_support
+    install_basic_deps
+    set_host
+    install_docker
+    install_mongo
+    install_hipache
+    install_gandalf
+    install_tsuru_pkg
+    if [[ ${install_archive_server} == "1" ]]; then
+        install_archive_server_pkg
+    fi
+    install_swift
+    if [[ ${aws_access_key} != "" && ${aws_secret_key} != "" ]]; then
+        install_s3cmd
+    fi
+    config_tsuru_post
+    config_git_key
+    add_git_envs
+    add_initial_user
+    add_as_docker_node
+    install_platform python
+
+    echo '######################## DONE! ########################'
+    echo
+    echo "Some information about your tsuru installation:"
+    echo
+    echo "Admin user: ${adminuser}"
+    echo "Admin password: ${adminpassword} (PLEASE CHANGE RUNNING: tsuru change-password)"
+    echo "Target address: $host_ip:8080"
+}
+
+function install_client {
+    check_support
+    install_basic_deps
+    set_host
+    install_docker
+    install_tsuru_client
+    install_swift
+    if [[ ${aws_access_key} != "" && ${aws_secret_key} != "" ]]; then
+        install_s3cmd
+    fi
+    config_tsuru_post
+    add_initial_user
+    if [[ ${without_dashboard-} != "1" ]]; then
+        install_dashboard
+    fi
+
+    echo '######################## DONE! ########################'
+    echo
+    echo "Some information about your tsuru installation:"
+    echo
+    echo "Admin user: ${adminuser}"
+    echo "Admin password: ${adminpassword} (PLEASE CHANGE RUNNING: tsuru change-password)"
+    echo "Target address: $host_ip:8080"
+    if [[ ${without_dashboard-} != "1" ]]; then
+        local cont_id=$(docker ps | grep tsuru-dashboard | cut -d ' ' -f 1)
+        local dashboard_port=$(docker inspect $cont_id | grep HostPort  | head -n1 | sed "s/[^0-9]//g")
+        echo "Dashboard address: $host_ip:$dashboard_port"
+        echo
+        echo "You should run \`source ~/.bashrc\` on your current terminal."
+        echo
+        echo "Installed apps:"
+        sleep 1
+        tsuru app-list
+    fi
+}
+
+function install_dockerfarm {
+    check_support
+    install_basic_deps
+    set_host
+    install_docker
+}
+
+function install_exportvars {
+    declare -p
 }
 
 function show_help {
@@ -632,6 +729,14 @@ Options:
  -w, --without-dashboard        Install without dashboard    (default: with dashboard)
  -I, --set-interface            The IP provided by --host-ip is not really allocated to this VM,
                                 use ifconfig to set up an interface so it can be reached
+ -D, --docker-node [node1] [node2] ...
+                                Add these docker nodes to tsuru server for building clusters
+ -t, --template [name]          Install template, name options:
+                                - all: install all packages (default)
+                                - dockerfarm: install docker only
+                                - server: install mongo, hipache, gandalf, archiver, tsuru-server
+                                  and their dependencies
+                                - client: install tsuru-admin, tsuru-client and their dependencies
      --debug                    Print debug messages
      --docker-pool [name]       Add docker to distination pool of tsuru (default: theonepool)
      --set-interface            The VM's IP provided by --host-ip is a temporary IP,
@@ -643,9 +748,6 @@ Options:
 
 while [ "${1-}" != "" ]; do
     case $1 in
-        "-I" | "--set-interface")
-            set_interface="y"
-            ;;
         "--debug")
             set -x
             is_debug=1
@@ -654,8 +756,19 @@ while [ "${1-}" != "" ]; do
             shift
             docker_pool=$1
             ;;
-        "--set-interface")
+        "-I" | "--set-interface")
             set_interface="y"
+            ;;
+        "-D" | "--docker-node")
+            while [ "${2-}" != "" ]; do
+                shift
+                [[ ${1:0:1} != "-" ]] || break
+                docker_node="$docker_node $1"
+            done
+            ;;
+        "-t" | "--template")
+            shift
+            install_func=install_$1
             ;;
         "-n" | "--host-name")
             shift
@@ -718,7 +831,7 @@ while [ "${1-}" != "" ]; do
             ext_repository=$1
             ;;
         "-d" | "--docker-only")
-            install_docker_only=1
+            install_func=install_dockerfarm
             ;;
         "-w" | "--without-dashboard")
             without_dashboard=1
@@ -732,4 +845,4 @@ while [ "${1-}" != "" ]; do
     shift
 done
 
-install_all
+$install_func
