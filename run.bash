@@ -169,8 +169,8 @@ function install_docker {
         echo "Installing docker..."
         curl -s https://get.docker.io/gpg | sudo apt-key add -
         echo "deb http://get.docker.io/ubuntu docker main" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-        sudo apt-get update -qq
-        sudo apt-get install lxc-docker -qqy
+        sudo apt-get update
+        sudo apt-get install lxc-docker -y
     fi
     local opts=$(bash -c 'source /etc/default/docker && echo $DOCKER_OPTS')
     if [[ ! $opts =~ "://" ]]; then
@@ -196,7 +196,7 @@ function install_docker {
 }
 
 function install_mongo {
-    sudo apt-get remove --purge mongodb-10gen -qqy || true
+    sudo apt-get remove --purge mongodb-10gen -y || true
     local version=$(mongod --version | grep "db version" | sed s/^.*v//)
     local iversion=$(installed_version mongo 2.4.0 $version)
     if [[ $iversion != "" ]]; then
@@ -205,8 +205,8 @@ function install_mongo {
         echo "Installing mongodb..."
         sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
         echo "deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen" | sudo tee /etc/apt/sources.list.d/mongodb.list > /dev/null
-        sudo apt-get update -qq
-        sudo apt-get install mongodb-org -qqy
+        sudo apt-get update
+        sudo apt-get install mongodb-org -y
         echo "nojournal = true" | sudo tee -a /etc/mongod.conf > /dev/null
     fi
     sudo stop mongod 1>&2 2>/dev/null || true
@@ -221,7 +221,7 @@ function install_mongo {
 
 function install_hipache {
     # TODO detect existing installation
-    sudo apt-get install node-hipache -qqy
+    sudo apt-get install node-hipache -y
     sudo stop hipache 1>&2 2>/dev/null || true
     sudo start hipache
     local addr=$(running_addr node)
@@ -236,7 +236,7 @@ function install_hipache {
 }
 
 function install_gandalf {
-    sudo apt-get install gandalf-server -qqy
+    sudo apt-get install gandalf-server -y
     local hook_dir=/home/git/bare-template/hooks
     sudo mkdir -p $hook_dir
     sudo curl -sL ${hook_url} -o ${hook_dir}/${hook_name}
@@ -373,7 +373,7 @@ function install_dashboard {
 
 function install_tsuru_pkg {
     echo "Installing Tsuru from deb package..."
-    sudo apt-get install tsuru-server tsuru-admin tsuru-client -qqy
+    sudo apt-get install tsuru-server tsuru-admin tsuru-client -y
 
     sudo stop tsuru-server-api >/dev/null 2>&1 || true
     config_tsuru_pre
@@ -411,7 +411,7 @@ function install_tsuru_src {
 }
 
 function install_archive_server_pkg {
-    sudo apt-get install archive-server -qqy
+    sudo apt-get install archive-server -y
 
     sudo stop archive-server || true
 
