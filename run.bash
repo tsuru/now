@@ -22,6 +22,7 @@ mongohost="127.0.0.1"
 mongoport="27017"
 dockerhost="127.0.0.1"
 dockerport="2375"
+registryport="3030"
 adminuser="admin@example.com"
 adminpassword="admin123"
 install_archive_server=0
@@ -70,6 +71,7 @@ redis-queue:
   port: 6379
 docker:
   collection: docker_containers
+  registry: {{{HOST_IP}}}:$registryport
   repository-namespace: tsuru
   router: hipache
   deploy-cmd: /var/lib/tsuru/deploy
@@ -234,6 +236,21 @@ function install_docker {
     fi
     export DOCKER_HOST=tcp://$dockerhost:$dockerport
     docker_node="$docker_node $DOCKER_HOST"
+}
+
+function install_docker_registry {
+    echo "Installing docker-registry..."
+    sudo apt-get update -qq
+    sudo apt-get install docker-registry -qqy
+    local opts=$(bash -c 'source /etc/default/docker-registry && echo $DOCKER_REGISTRY_LISTEN')
+    if [[ $opts != "0.0.0.0:$registryport" ]]; then
+        echo "Changing /etc/default/docker-registry to listen on tcp://0.0.0.0:${registryport}..."
+        echo "DOCKER_REGISTRY_LISTEN=\":${registryport}\"" | sudo tee /etc/default/docker-registry > /dev/null
+    fi
+    sudo service docker-registry stop 1>&2 2>/dev/null || true
+    sleep 1
+    sudo service docker-registry start
+    sleep 5
 }
 
 function install_mongo {
@@ -579,6 +596,7 @@ function install_all {
     install_basic_deps ${tsuru_ppa_source-"nightly"}
     set_host
     install_docker
+    install_docker_registry
     install_mongo
     install_hipache
     install_gandalf
@@ -631,6 +649,7 @@ function install_server {
     install_basic_deps
     set_host
     install_docker
+    install_docker_registry
     install_mongo
     install_hipache
     install_gandalf
