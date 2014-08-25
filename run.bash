@@ -190,7 +190,7 @@ function install_docker {
     local home_host=$(bash -ic 'source ~/.bashrc && echo $DOCKER_HOST')
     if [[ $home_host != "$dockerhost:$dockerport" ]]; then
         echo "Adding DOCKER_HOST to ~/.bashrc"
-        echo -e "export DOCKER_HOST=$dockerhost:$dockerport" | tee -a ~/.bashrc > /dev/null
+        echo -e "export DOCKER_HOST=tcp://$dockerhost:$dockerport" | tee -a ~/.bashrc > /dev/null
     fi
     export DOCKER_HOST=$dockerhost:$dockerport
 }
