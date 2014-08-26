@@ -324,10 +324,6 @@ function install_gandalf {
         exit 1
     fi
     echo "gandalf found running at $gandalfaddr"
-    mkdir -p ~/.ssh
-    if ! grep -Pzo "Host ${host_ip}\s+StrictHostKeyChecking no" ~/.ssh/config >/dev/null; then
-        echo -e "Host ${host_ip}\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
-    fi
     sudo cp /usr/share/doc/gandalf-server/examples/git-daemon.default.example /etc/default/git-daemon
     sudo service git-daemon restart
     sleep 5
@@ -391,6 +387,13 @@ function enable_initial_user {
         local token=$(curl -s -XPOST -d"{\"password\":\"${adminpassword}\"}" http://${host_name}:8080/users/${adminuser}/tokens | jq -r .token)
         echo $token > ~/.tsuru_token
     fi
+    mkdir -p ~/.ssh
+    if ! grep -Pzo "Host ${host_ip}\s+StrictHostKeyChecking no" ~/.ssh/config >/dev/null; then
+        echo -e "Host ${host_ip}\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+    fi
+    if ! grep -Pzo "Host ${host_name}\s+StrictHostKeyChecking no" ~/.ssh/config >/dev/null; then
+        echo -e "Host ${host_name}\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+    fi
     if [[ ! -e ~/.ssh/id_rsa ]]; then
         yes | ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa > /dev/null
     fi
@@ -440,7 +443,7 @@ function install_dashboard {
     git reset --hard
     git clean -dfx
     git pull
-    git remote add tsuru git@${host_ip}:tsuru-dashboard.git || true
+    git remote add tsuru git@${host_name}:tsuru-dashboard.git || true
     git push tsuru master
     popd
     popd
@@ -681,7 +684,6 @@ function install_client {
     check_support
     install_basic_deps
     set_host
-    install_docker
     install_tsuru_client
     install_swift
     if [[ ${aws_access_key} != "" && ${aws_secret_key} != "" ]]; then
