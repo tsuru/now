@@ -378,12 +378,16 @@ function config_tsuru_post {
     tsuru-admin target-set default
 }
 
-function add_initial_user {
-    echo "Adding initial admin user..."
+function create_initial_user {
+    echo "Creating initial admin user..."
     mongo tsurudb --eval 'db.teams.update({_id: "admin"}, {_id: "admin"}, {upsert: true})'
     mongo tsurudb --eval "db.teams.update({_id: 'admin'}, {\$addToSet: {users: '${adminuser}'}})"
+    curl -s -XPOST -d"{\"email\":\"${adminuser}\",\"password\":\"${adminpassword}\"}" http://${host_name}:8080/users
+}
+
+function enable_initial_user {
+    echo "Retriving token and uploading public key for initial admin user..."
     if [[ ! -e ~/.tsuru_token ]]; then
-        curl -s -XPOST -d"{\"email\":\"${adminuser}\",\"password\":\"${adminpassword}\"}" http://${host_name}:8080/users
         local token=$(curl -s -XPOST -d"{\"password\":\"${adminpassword}\"}" http://${host_name}:8080/users/${adminuser}/tokens | jq -r .token)
         echo $token > ~/.tsuru_token
     fi
@@ -610,7 +614,8 @@ function install_all {
     config_tsuru_post
     config_git_key
     add_git_envs
-    add_initial_user
+    create_initial_user
+    enable_initial_user
     add_as_docker_node
     install_platform python
     if [[ ${without_dashboard-} != "1" ]]; then
@@ -657,7 +662,8 @@ function install_server {
     config_tsuru_post
     config_git_key
     add_git_envs
-    add_initial_user
+    create_initial_user
+    enable_initial_user
     add_as_docker_node
     install_platform python
 
@@ -681,7 +687,7 @@ function install_client {
         install_s3cmd
     fi
     config_tsuru_post
-    add_initial_user
+    enable_initial_user
     if [[ ${without_dashboard-} != "1" ]]; then
         install_dashboard
     fi
