@@ -188,11 +188,11 @@ function install_docker {
     fi
     echo "docker found running at $dockerhost:$dockerport"
     local home_host=$(bash -ic 'source ~/.bashrc && echo $DOCKER_HOST')
-    if [[ $home_host != "$dockerhost:$dockerport" ]]; then
+    if [[ $home_host != "tcp://$dockerhost:$dockerport" ]]; then
         echo "Adding DOCKER_HOST to ~/.bashrc"
         echo -e "export DOCKER_HOST=tcp://$dockerhost:$dockerport" | tee -a ~/.bashrc > /dev/null
     fi
-    export DOCKER_HOST=$dockerhost:$dockerport
+    export DOCKER_HOST=tcp://$dockerhost:$dockerport
 }
 
 function install_mongo {
