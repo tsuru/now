@@ -126,23 +126,32 @@ function installed_version {
 
 #############################################################################
 
+function public_ip {
+    local ip=$(curl -s -L -m2 http://169.254.169.254/latest/meta-data/public-ipv4 || true)
+    if [[ $ip == "" ]]; then
+        ip=$(/sbin/ifconfig | grep -A1 eth | grep "inet addr" | tail -n1 | sed "s/[^0-9]*\([0-9.]*\).*/\1/")
+    fi
+    if [[ $ip == "" ]]; then
+        ip=$(/sbin/ifconfig | grep -A1 venet0 | grep "inet addr" | tail -n1 | sed "s/[^0-9]*\([0-9.]*\).*/\1/")
+    fi
+    if [[ $ip == "" ]]; then
+        ip=$(ifconfig | grep -A1 wlan | grep "inet addr" | tail -n1 | sed "s/[^0-9]*\([0-9.]*\).*/\1/")
+    fi
+    if [[ $ip == "" ]]; then
+        error "Couldn't find suitable public ip"
+        exit 1
+    fi
+    echo $ip
+}
+
 function set_host {
     if [[ "$host_ip" && "$set_interface" ]]; then
         sudo ifconfig lo:0 $host_ip netmask 255.255.255.255 up
     fi
     if [[ $host_ip == "" ]]; then
-        host_ip=$(curl -s -L -m2 http://169.254.169.254/latest/meta-data/public-ipv4 || true)
+        host_ip=$(public_ip)
     fi
-    if [[ $host_ip == "" ]]; then
-        host_ip=$(/sbin/ifconfig | grep -A1 eth | grep "inet addr" | tail -n1 | sed "s/[^0-9]*\([0-9.]*\).*/\1/")
-    fi
-    if [[ $host_ip == "" ]]; then
-        host_ip=$(/sbin/ifconfig | grep -A1 venet0 | grep "inet addr" | tail -n1 | sed "s/[^0-9]*\([0-9.]*\).*/\1/")
-    fi
-    if [[ $host_ip == "" ]]; then
-        host_ip=$(ifconfig | grep -A1 wlan | grep "inet addr" | tail -n1 | sed "s/[^0-9]*\([0-9.]*\).*/\1/")
-    fi
-    if [[ $host_ip == "" || $host_ip == "127.0.0.1" ]]; then
+    if [[ $host_ip == "127.0.0.1" ]]; then
         echo "Couldn't find suitable host_ip, please run with --host-ip <external ip>"
         exit 1
     fi
@@ -719,7 +728,12 @@ function install_dockerfarm {
     check_support
     install_basic_deps
     set_host
+    dockerhost=$(public_ip)
     install_docker
+    install_tsuru_client
+    config_tsuru_post
+    enable_initial_user
+    add_as_docker_node
 }
 
 function install_exportvars {
