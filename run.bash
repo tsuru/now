@@ -764,18 +764,16 @@ Options:
  -w, --without-dashboard        Install without dashboard    (default: with dashboard)
  -I, --set-interface            The IP provided by --host-ip is not really allocated to this VM,
                                 use ifconfig to set up an interface so it can be reached
- -D, --docker-node [node1] [node2] ...
-                                Add these docker nodes to tsuru server for building clusters
+ -N, --docker-node [node1] [node2] ...
+                                Add extra docker nodes to tsuru server for building clusters
  -t, --template [name]          Install template, name options:
                                 - all: install all packages (default)
                                 - dockerfarm: install docker only
                                 - server: install mongo, hipache, gandalf, archiver, tsuru-server
                                   and their dependencies
                                 - client: install tsuru-admin, tsuru-client and their dependencies
-     --debug                    Print debug messages
-     --docker-pool [name]       Add docker to distination pool of tsuru (default: theonepool)
-     --set-interface            The VM's IP provided by --host-ip is a temporary IP,
-                                use ifconfig to set up an interface for it
+ -v, --verbose                  Print debug messages
+ -P, --docker-pool [name]       Add docker to distination pool of tsuru (default: theonepool)
 
  -h, --help                     This help screen
 "
@@ -783,18 +781,18 @@ Options:
 
 while [ "${1-}" != "" ]; do
     case $1 in
-        "--debug")
+        "-v" | "--verbose")
             set -x
             is_debug=1
             ;;
-        "--docker-pool")
+        "-P" | "--docker-pool")
             shift
             docker_pool=$1
             ;;
         "-I" | "--set-interface")
             set_interface="y"
             ;;
-        "-D" | "--docker-node")
+        "-N" | "--docker-node")
             while [ "${2-}" != "" ]; do
                 shift
                 [[ ${1:0:1} != "-" ]] || break
