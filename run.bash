@@ -244,7 +244,7 @@ function install_docker {
         echo -e "export DOCKER_HOST=tcp://$dockerhost:$dockerport" | tee -a ~/.bashrc > /dev/null
     fi
     export DOCKER_HOST=tcp://$dockerhost:$dockerport
-    docker_node="$docker_node $DOCKER_HOST"
+    docker_node="$docker_node $dockerhost:$dockerport"
 }
 
 function install_docker_registry {
@@ -750,7 +750,7 @@ Options:
  -i, --host-ip [name]           Set the VM's IP
  -c, --tsuru-from-source        Install tsuru from master source code (default: nightly packages)
  -p, --tsuru-pkg-stable         Install tsuru from stable packages   (default: nightly packages)
- -n, --tsuru-pkg-nightly        Install tsuru from nightly build packages
+ -N, --tsuru-pkg-nightly        Install tsuru from nightly build packages
  -f, --force-install [pkg]      Force installation of named package
  -g, --gopath [path]            prepend new path to env var GOPATH
  -a, --archive-server           Install the archive server
@@ -764,7 +764,7 @@ Options:
  -w, --without-dashboard        Install without dashboard    (default: with dashboard)
  -I, --set-interface            The IP provided by --host-ip is not really allocated to this VM,
                                 use ifconfig to set up an interface so it can be reached
- -N, --docker-node [node1] [node2] ...
+ -D, --docker-node [node1] [node2] ...
                                 Add extra docker nodes to tsuru server for building clusters
  -t, --template [name]          Install template, name options:
                                 - all: install all packages (default)
@@ -792,7 +792,7 @@ while [ "${1-}" != "" ]; do
         "-I" | "--set-interface")
             set_interface="y"
             ;;
-        "-N" | "--docker-node")
+        "-D" | "--docker-node")
             while [ "${2-}" != "" ]; do
                 shift
                 [[ ${1:0:1} != "-" ]] || break
