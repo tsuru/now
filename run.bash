@@ -157,9 +157,8 @@ function install_basic_deps {
     echo "Updating apt-get and installing basic dependencies (this could take a while)..."
     sudo apt-get update
     sudo apt-get install jq screen curl mercurial git bzr redis-server software-properties-common -y
-    if [[ $tsuru_ppa_source == "stable" ]]; then
-        sudo apt-add-repository ppa:tsuru/ppa -y >/dev/null 2>&1
-    else
+    sudo apt-add-repository ppa:tsuru/ppa -y >/dev/null 2>&1
+    if [[ $tsuru_ppa_source == "nightly" ]]; then
         sudo apt-add-repository ppa:tsuru/snapshots -y >/dev/null 2>&1
     fi
     sudo apt-get update
