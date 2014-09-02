@@ -153,10 +153,15 @@ function check_support {
 }
 
 function install_basic_deps {
+    local tsuru_ppa_source=$1
     echo "Updating apt-get and installing basic dependencies (this could take a while)..."
     sudo apt-get update
     sudo apt-get install jq screen curl mercurial git bzr redis-server software-properties-common -y
-    sudo apt-add-repository ppa:tsuru/ppa -y >/dev/null 2>&1
+    if [[ $tsuru_ppa_source == "stable" ]]; then
+        sudo apt-add-repository ppa:tsuru/ppa -y >/dev/null 2>&1
+    else
+        sudo apt-add-repository ppa:tsuru/snapshots -y >/dev/null 2>&1
+    fi
     sudo apt-get update
 }
 
@@ -506,7 +511,7 @@ function add_git_envs {
 
 function install_all {
     check_support
-    install_basic_deps
+    install_basic_deps ${tsuru_ppa_source}
     set_host
     install_docker
     if [[ ${install_docker_only-} == "1" ]]; then
@@ -515,12 +520,12 @@ function install_all {
     install_mongo
     install_hipache
     install_gandalf
-    if [[ ${install_tsuru_pkg-} == "1" ]]; then
-        install_tsuru_pkg
-    else
+    if [[ ${install_tsuru_source-} == "1" ]]; then
         config_tsuru_pre
         install_go
         install_tsuru_src
+    else
+        install_tsuru_pkg
     fi
     if [[ ${install_archive_server} == "1" ]]; then
         install_archive_server_pkg
@@ -566,7 +571,9 @@ Options:
 
  -n, --host-name [name]         Set the VM's hostname
  -i, --host-ip [name]           Set the VM's IP
- -p, --tsuru-pkg                Install tsuru from packages   (default: from source)
+ -c, --tsuru-from-source        Install tsuru from master source code (default: nightly packages)
+ -p, --tsuru-pkg-stable         Install tsuru from stable packages   (default: nightly packages)
+ -n, --tsuru-pkg-nightly        Install tsuru from nightly build packages
  -f, --force-install [pkg]      Force installation of named package
  -a, --archive-server           Install the archive server
  -u, --hook-url [url]           Git hook URL
@@ -596,7 +603,15 @@ while [ "${1-}" != "" ]; do
             shift
             host_ip=$1
             ;;
-        "-p" | "--tsuru-pkg")
+        "-c" | "--tsuru-from-source")
+            install_tsuru_source=1
+            ;;
+        "-p" | "--tsuru-pkg-stable")
+            tsuru_ppa_source="stable"
+            install_tsuru_pkg=1
+            ;;
+        "-n" | "--tsuru-pkg-nightly")
+            tsuru_ppa_source="nightly"
             install_tsuru_pkg=1
             ;;
         "-f" | "--force-install")
