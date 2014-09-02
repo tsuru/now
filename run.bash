@@ -511,7 +511,7 @@ function add_git_envs {
 
 function install_all {
     check_support
-    install_basic_deps ${tsuru_ppa_source}
+    install_basic_deps ${tsuru_ppa_source-"nightly"}
     set_host
     install_docker
     if [[ ${install_docker_only-} == "1" ]]; then
