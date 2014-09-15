@@ -609,7 +609,7 @@ while [ "${1-}" != "" ]; do
             tsuru_ppa_source="stable"
             install_tsuru_pkg=1
             ;;
-        "-n" | "--tsuru-pkg-nightly")
+        "-N" | "--tsuru-pkg-nightly")
             tsuru_ppa_source="nightly"
             install_tsuru_pkg=1
             ;;
