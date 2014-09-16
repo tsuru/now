@@ -20,3 +20,37 @@ Running the command below should already create a working tsuru environment:
 ```
 curl -sL https://raw.github.com/tsuru/now/master/run.bash | bash
 ```
+
+## Advanced Usage
+
+With Tsuru Now, you can build your own tsuru cluster easily.
+
+### Building a cluster server
+
+```
+curl -sL https://raw.github.com/tsuru/now/master/run.bash > run.bash
+chmod +x run.bash
+./run.bash --template server
+```
+
+
+### Building a client connected to the server
+
+Assume the IP address of cluster server is 10.42.42.1
+
+```
+curl -sL https://raw.github.com/tsuru/now/master/run.bash > run.bash
+chmod +x run.bash
+./run.bash --template client --host-ip 10.42.42.1
+```
+
+
+### Building a docker node controlled by the server
+
+Assume the IP address of cluster server is 10.42.42.1
+
+```
+curl -sL https://raw.github.com/tsuru/now/master/run.bash > run.bash
+chmod +x run.bash
+./run.bash --template dockerfarm --host-ip 10.42.42.1
+```
