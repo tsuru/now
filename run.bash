@@ -264,25 +264,21 @@ function install_docker_registry {
 }
 
 function install_mongo {
-    sudo apt-get remove --purge mongodb-10gen -y || true
+    sudo service mongod stop 1>&2 2>/dev/null || true
+    sudo service mongodb stop 1>&2 2>/dev/null || true
+    sudo apt-get remove --purge mongodb-10gen mongodb-org -y || true
     local version=$(mongod --version 2>/dev/null | grep "db version" | sed s/^.*v//)
     local iversion=$(installed_version mongo 2.4.0 $version)
     if [[ $iversion != "" ]]; then
         echo "Skipping mongod installation, version installed: $iversion"
     else
         echo "Installing mongodb..."
-        sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
-        if [[ $distid == "Debian" ]]; then
-            echo "deb http://downloads-distro.mongodb.org/repo/debian-sysvinit dist 10gen" | sudo tee /etc/apt/sources.list.d/mongodb.list > /dev/null
-        else
-            echo "deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen" | sudo tee /etc/apt/sources.list.d/mongodb.list > /dev/null
-        fi
-        sudo apt-get update
-        sudo apt-get install mongodb-org -y
-        echo "nojournal = true" | sudo tee -a /etc/mongod.conf > /dev/null
+        sudo apt-get install mongodb -y
+        sudo sed -i 's/^journal=true//' /etc/mongodb.conf
+        echo "nojournal = true" | sudo tee -a /etc/mongodb.conf > /dev/null
     fi
-    sudo service mongod stop 1>&2 2>/dev/null || true
-    sudo service mongod start
+    sudo service mongodb stop 1>&2 2>/dev/null || true
+    sudo service mongodb start
     sleep 5
     mongoport=$(running_port mongod)
     if [[ $mongoport == "" ]]; then
