@@ -32,6 +32,7 @@ git_envs=(A=B)
 aws_access_key=""
 aws_secret_key=""
 ext_repository=""
+DEBIAN_FRONTEND=noninteractive
 
 declare -A DISTMAP=(
     [wheezy]=wheezy-backports
