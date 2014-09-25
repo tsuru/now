@@ -192,7 +192,7 @@ function install_basic_deps {
     sudo apt-get update
     sudo apt-get install jq screen curl mercurial git bzr redis-server software-properties-common -y
     if [[ $ext_repository ]]; then
-        curl -s ${ext_repository}/public.key | sudo apt-key add -
+        curl -sS ${ext_repository}/public.key | sudo apt-key add -
         echo "deb ${ext_repository} ${DISTMAP[$codename]} main contrib" | sudo tee /etc/apt/sources.list.d/tsuru-deb.list
         echo "deb-src ${ext_repository} ${DISTMAP[$codename]} main contrib" | sudo tee -a /etc/apt/sources.list.d/tsuru-deb.list
     elif [[ $distid == "Ubuntu" ]]; then
@@ -215,7 +215,7 @@ function install_docker {
         echo "Skipping docker installation, version installed: $iversion"
     else
         echo "Installing docker..."
-        curl -s https://get.docker.io/gpg | sudo apt-key add -
+        curl -sS https://get.docker.io/gpg | sudo apt-key add -
         echo "deb http://get.docker.io/ubuntu docker main" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
         sudo apt-get update
         sudo apt-get install lxc-docker -y
@@ -314,7 +314,7 @@ function install_gandalf {
     sudo apt-get install gandalf-server -y
     local hook_dir=/home/git/bare-template/hooks
     sudo mkdir -p $hook_dir
-    sudo curl -sL ${hook_url} -o ${hook_dir}/${hook_name}
+    sudo curl -sSL ${hook_url} -o ${hook_dir}/${hook_name}
     sudo chmod +x ${hook_dir}/${hook_name}
     sudo chown -R git:git /home/git/bare-template
     sudo sed "s/^\(host: \).*$/\1${host_name}/" /etc/gandalf.conf -i
@@ -353,7 +353,7 @@ function install_go {
         else
             local plat="amd64"
         fi
-        curl -sL https://godeb.s3.amazonaws.com/godeb-$plat.tar.gz -o /tmp/godeb.tgz
+        curl -sSL https://godeb.s3.amazonaws.com/godeb-$plat.tar.gz -o /tmp/godeb.tgz
         tar -C /tmp -zxpf /tmp/godeb.tgz
         chmod +x /tmp/godeb
         /tmp/godeb install
@@ -384,13 +384,13 @@ function create_initial_user {
     echo "Creating initial admin user..."
     mongo tsurudb --eval 'db.teams.update({_id: "admin"}, {_id: "admin"}, {upsert: true})'
     mongo tsurudb --eval "db.teams.update({_id: 'admin'}, {\$addToSet: {users: '${adminuser}'}})"
-    curl -s -XPOST -d"{\"email\":\"${adminuser}\",\"password\":\"${adminpassword}\"}" http://${host_name}:8080/users
+    curl -sS -XPOST -d"{\"email\":\"${adminuser}\",\"password\":\"${adminpassword}\"}" http://${host_name}:8080/users
 }
 
 function enable_initial_user {
     echo "Retriving token and uploading public key for initial admin user..."
     if [[ ! -e ~/.tsuru_token ]]; then
-        local token=$(curl -s -XPOST -d"{\"password\":\"${adminpassword}\"}" http://${host_name}:8080/users/${adminuser}/tokens | jq -r .token)
+        local token=$(curl -sS -XPOST -d"{\"password\":\"${adminpassword}\"}" http://${host_name}:8080/users/${adminuser}/tokens | jq -r .token)
         echo $token > ~/.tsuru_token
     fi
     mkdir -p ~/.ssh
