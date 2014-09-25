@@ -159,7 +159,8 @@ function set_host {
     echo "Chosen host ip: $host_ip. You can override with --host-ip <external ip>"
 
     if [[ $host_name == "" ]]; then
-        host_name="$host_ip.xip.io"
+        host_name="$host_ip.nip.io"
+        echo "$host_ip $host_name" | sudo tee -a /etc/hosts
     fi
     echo "Chosen host name: $host_name. You can override with --host-name <hostname>"
 }
