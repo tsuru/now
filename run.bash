@@ -655,7 +655,7 @@ function install_all {
 
 function install_server {
     check_support
-    install_basic_deps
+    install_basic_deps ${tsuru_ppa_source-"nightly"}
     set_host
     install_docker
     install_docker_registry
@@ -689,7 +689,7 @@ function install_server {
 
 function install_client {
     check_support
-    install_basic_deps
+    install_basic_deps ${tsuru_ppa_source-"nightly"}
     set_host
     install_tsuru_client
     install_swift
@@ -724,7 +724,7 @@ function install_client {
 
 function install_dockerfarm {
     check_support
-    install_basic_deps
+    install_basic_deps ${tsuru_ppa_source-"nightly"}
     set_host
     dockerhost=$(public_ip)
     install_docker
