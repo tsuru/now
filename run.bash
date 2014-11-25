@@ -44,7 +44,6 @@ declare -A DISTMAP=(
 
 TSURU_CONF=$(cat <<EOF
 listen: "0.0.0.0:8080"
-admin-listen: "127.0.0.1:8888"
 host: http://{{{HOST_IP}}}:8080
 debug: true
 admin-team: admin
