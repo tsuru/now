@@ -356,6 +356,15 @@ function install_go {
         chmod +x /tmp/godeb
         /tmp/godeb install
     fi
+    if [[ $GOPATH == "" ]]; then
+        export GOPATH=$HOME/go
+    fi
+    mkdir -p $GOPATH
+    local bash_gopath=$(bash -ic 'source ~/.bashrc && echo $GOPATH')
+    if [[ $bash_gopath != $GOPATH ]]; then
+        echo "Adding GOPATH=$GOPATH to ~/.bashrc"
+        echo -e "export GOPATH=$GOPATH" | tee -a ~/.bashrc > /dev/null
+    fi
     go get github.com/tools/godep
     sudo cp $(echo $GOPATH | awk -F ':' '{print $1}')/bin/godep /usr/local/bin
 }
