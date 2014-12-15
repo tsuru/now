@@ -356,7 +356,7 @@ function install_go {
         chmod +x /tmp/godeb
         /tmp/godeb install
     fi
-    if [[ $GOPATH == "" ]]; then
+    if [[ ${GOPATH-} == "" ]]; then
         export GOPATH=$HOME/go
     fi
     mkdir -p $GOPATH
