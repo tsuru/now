@@ -365,6 +365,13 @@ function install_go {
         echo "Adding GOPATH=$GOPATH to ~/.bashrc"
         echo -e "export GOPATH=$GOPATH" | tee -a ~/.bashrc > /dev/null
     fi
+    if [ -f ~vagrant/.bashrc ]; then
+        local vagrant_bash_gopath=$(bash -ic 'source ~vagrant/.bashrc && echo $GOPATH')
+        if [[ $vagrant_bash_gopath != $GOPATH ]]; then
+            echo "Adding GOPATH=$GOPATH to ~vagrant/.bashrc"
+            echo -e "export GOPATH=$GOPATH" | tee -a ~vagrant/.bashrc > /dev/null
+        fi
+    fi
     go get github.com/tools/godep
     sudo cp $(echo $GOPATH | awk -F ':' '{print $1}')/bin/godep /usr/local/bin
 }
