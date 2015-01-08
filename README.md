@@ -1,6 +1,6 @@
 # Tsuru Now
 
-Yet another script to install tsuru and its dependencies.
+Yet another script to install tsuru and its dependencies on Ubuntu or Debian distros.
 
 These are some goals for this project:
 
@@ -12,6 +12,8 @@ These are some goals for this project:
     * Docker node
     * Load balancer node
 * A web UI to automatically run it on EC2 instances
+
+Note: This scripts works only on Debian or Ubuntu distros, isn't supported to run on CentOS/RHEL.
 
 ## Running
 
