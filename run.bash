@@ -213,8 +213,8 @@ function install_docker {
         echo "Skipping docker installation, version installed: $iversion"
     else
         echo "Installing docker..."
-        curl -sS https://get.docker.io/gpg | sudo apt-key add -
-        echo "deb http://get.docker.io/ubuntu docker main" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        curl -sS https://get.docker.com/gpg | sudo apt-key add -
+        echo "deb https://get.docker.io/ubuntu docker main" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
         sudo apt-get update
         sudo apt-get install lxc-docker -y
     fi
