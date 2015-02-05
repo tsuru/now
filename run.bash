@@ -1,13 +1,11 @@
 #!/bin/bash -ue
 
-# Copyright 2014 tsuru-now authors. All rights reserved.
+# Copyright 2015 tsuru-now authors. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-set -u
-set -e
+set -eu
 
-dist_id=""
 release=""
 codename=""
 host_ip=""
@@ -32,7 +30,7 @@ git_envs=(A=B)
 aws_access_key=""
 aws_secret_key=""
 ext_repository=""
-DEBIAN_FRONTEND=noninteractive
+export DEBIAN_FRONTEND=noninteractive
 
 declare -A DISTMAP=(
     [wheezy]=wheezy-backports
@@ -90,21 +88,21 @@ EOF
 #############################################################################
 
 function error {
-    echo $@ 1>&2
+    echo "$@" 1>&2
 }
 
 function running_port {
     local appname=$1
-    echo $(running_addr $appname | sed s/.*://)
+    running_addr "${appname}" | sed "s/.*://"
 }
 
 function running_addr {
     local appname=$1
-    for counter in {1..30}; do
+    for _ in {1..30}; do
         sleep 0.5
-        local addr=$(sudo netstat -tnlp | grep $appname | tr -s " " | cut -d' ' -f 4 | sort | head -n1)
+        local addr=$(sudo netstat -tnlp | grep "${appname}" | tr -s " " | cut -d' ' -f 4 | sort | head -n1)
         if [[ $addr != "" ]]; then
-            echo $addr
+            echo "${addr}"
             break
         fi
         echo "Waiting for ${appname}..." 1>&2
@@ -118,7 +116,7 @@ function installed_version {
     local max_version=$(echo -e "${minversion}min\n$version" | sort -V | tail -n 1)
     local install_var=$(eval echo $`echo '{force_install_'`${cmdid}`echo '-}'`)
     if [[ $install_var != "1" && $max_version != "${minversion}min" ]]; then
-        echo $max_version
+        echo "${max_version}"
     fi
 }
 
@@ -139,7 +137,7 @@ function public_ip {
         error "Couldn't find suitable public ip"
         exit 1
     fi
-    echo $ip
+    echo "${ip}"
 }
 
 function set_host {
@@ -171,7 +169,7 @@ function check_support {
     distid=$(lsb_release -is)
     release=$(lsb_release -rs)
     codename=$(lsb_release -cs)
-    if [[ $distid == "Debian" && $release < 7 ]]; then
+    if [[ $distid == "Debian" && $release -lt 7 ]]; then
         error "Error: This script requires Debian release >= 7"
     fi
     echo "Detect ${distid} ${release} (${codename}), supported system"
@@ -180,7 +178,7 @@ function check_support {
 function install_basic_deps {
     local tsuru_ppa_source=$1
     echo "Updating apt-get and installing basic dependencies (this could take a while)..."
-    if [[ $distid == "Debian" && $release > 7 && $release < 8 ]]; then
+    if [[ $distid == "Debian" && $release -gt 7 && $release -lt 8 ]]; then
         if ! apt-cache policy | grep "l=Debian Backports" > /dev/null; then
             echo 'deb http://http.debian.net/debian wheezy-backports main contrib non-free' | sudo tee /etc/apt/sources.list.d/backports.list
         fi
@@ -208,7 +206,7 @@ function install_basic_deps {
 
 function install_docker {
     local version=$(docker version 2>/dev/null | grep "Client version" | cut -d" " -f3)
-    local iversion=$(installed_version docker 0.20.0 $version)
+    local iversion=$(installed_version docker 0.20.0 "${version}")
     if [[ $iversion != "" ]]; then
         echo "Skipping docker installation, version installed: $iversion"
     else
@@ -219,7 +217,7 @@ function install_docker {
         sudo apt-get install lxc-docker -y
     fi
     local opts=$(bash -c 'source /etc/default/docker && echo $DOCKER_OPTS')
-    if [[ ! $opts =~ "://" ]]; then
+    if [[ ! $opts =~ :// ]]; then
         echo "Changing /etc/default/docker to listen on tcp://0.0.0.0:${dockerport}..."
         echo "DOCKER_OPTS=\"\$DOCKER_OPTS -H tcp://0.0.0.0:${dockerport} --insecure-registry=${host_ip}:${registryport}\"" | sudo tee -a /etc/default/docker > /dev/null
     fi
@@ -266,9 +264,9 @@ function install_mongo {
     sudo service mongodb stop 1>&2 2>/dev/null || true
     sudo apt-get remove --purge mongodb-10gen mongodb-org -y || true
     local version=$(mongod --version 2>/dev/null | grep "db version" | sed s/^.*v//)
-    local iversion=$(installed_version mongo 2.4.0 $version)
+    local iversion=$(installed_version mongo 2.4.0 "${version}")
     if [[ $iversion != "" ]]; then
-        echo "Skipping mongod installation, version installed: $iversion"
+        echo "Skipping mongod installation, version installed: ${iversion}"
     else
         echo "Installing mongodb..."
         sudo apt-get install mongodb -y
@@ -288,7 +286,7 @@ function install_mongo {
 
 function install_hipache {
     local version=$(npm list hipache -g | grep hipache@ | sed "s/.*hipache@//g")
-    local iversion=$(installed_version hipache 0.3.0 $version)
+    local iversion=$(installed_version hipache 0.3.0 "${version}")
     if [[ $iversion != "" ]]; then
         echo "Skipping hipache installation, version installed: $iversion"
     else
@@ -341,7 +339,7 @@ function install_gandalf {
 
 function install_go {
     local version=$(go version 2>/dev/null | sed "s/go version[^0-9]*\([0-9.]*\).*/\1/")
-    local iversion=$(installed_version go 1.1.0 $version)
+    local iversion=$(installed_version go 1.1.0 "${version}")
     if [[ $iversion != "" ]]; then
         echo "Skipping go installation, version installed: $iversion"
     else
@@ -366,7 +364,7 @@ function install_go {
         echo -e "export GOPATH=$GOPATH" | tee -a ~/.bashrc > /dev/null
     fi
     go get github.com/tools/godep
-    sudo cp $(echo $GOPATH | awk -F ':' '{print $1}')/bin/godep /usr/local/bin
+    sudo cp $(echo "${GOPATH}" | awk -F ':' '{print $1}')/bin/godep /usr/local/bin
 }
 
 function config_tsuru_pre {
@@ -383,7 +381,7 @@ function config_tsuru_pre {
 
 function config_tsuru_post {
     tsuru-admin target-remove default
-    tsuru-admin target-add default ${host_name}:8080 || true
+    tsuru-admin target-add default "${host_name}:8080" || true
     tsuru-admin target-set default
 }
 
@@ -391,14 +389,14 @@ function create_initial_user {
     echo "Creating initial admin user..."
     mongo tsurudb --eval 'db.teams.update({_id: "admin"}, {_id: "admin"}, {upsert: true})'
     mongo tsurudb --eval "db.teams.update({_id: 'admin'}, {\$addToSet: {users: '${adminuser}'}})"
-    curl -sS -XPOST -d"{\"email\":\"${adminuser}\",\"password\":\"${adminpassword}\"}" http://${host_name}:8080/users
+    curl -sS -XPOST -d"{\"email\":\"${adminuser}\",\"password\":\"${adminpassword}\"}" "http://${host_name}:8080/users"
 }
 
 function enable_initial_user {
     echo "Retriving token and uploading public key for initial admin user..."
     if [[ ! -e ~/.tsuru_token ]]; then
-        local token=$(curl -sS -XPOST -d"{\"password\":\"${adminpassword}\"}" http://${host_name}:8080/users/${adminuser}/tokens | jq -r .token)
-        echo $token > ~/.tsuru_token
+        local token=$(curl -sS -XPOST -d"{\"password\":\"${adminpassword}\"}" "http://${host_name}:8080/users/${adminuser}/tokens" | jq -r .token)
+        echo "${token}" > ~/.tsuru_token
     fi
     mkdir -p ~/.ssh
     if ! grep -Pzo "Host ${host_ip}\s+StrictHostKeyChecking no" ~/.ssh/config >/dev/null; then
@@ -417,23 +415,23 @@ function add_as_docker_node {
     echo "Adding docker node to pool..."
     tsuru-admin docker-pool-add $docker_pool 2>/dev/null || true
     for node in $docker_node; do
-        tsuru-admin docker-node-add --register address=http://$node pool=$docker_pool 2>/dev/null || true
+        tsuru-admin docker-node-add --register address="http://${node}" pool=$docker_pool 2>/dev/null || true
     done
 }
 
 function install_platform {
     echo "Installing platform container..."
-    local has_plat=`(tsuru platform-list | grep $1$) || true`
+    local has_plat=$((tsuru platform-list | grep "${1}"$) || true)
     local dockerfile="https://raw.githubusercontent.com/tsuru/basebuilder/master/$1/Dockerfile"
     if [[ $has_plat == "" ]]; then
-        tsuru-admin platform-add $1 --dockerfile $dockerfile
+        tsuru-admin platform-add "$1" --dockerfile "$dockerfile"
     fi
-    local platform_ok=$(docker run --rm ${host_ip}:3030/tsuru/$1 bash -c 'source /var/lib/tsuru/config && ${VENV_DIR}/bin/circusd --daemon /etc/circus/circus.ini && sleep 2 && ps aux | grep circusd | grep -v grep')
+    local platform_ok=$(docker run --rm "${host_ip}:3030/tsuru/$1" bash -c 'source /var/lib/tsuru/config && ${VENV_DIR}/bin/circusd --daemon /etc/circus/circus.ini && sleep 2 && ps aux | grep circusd | grep -v grep')
     if [[ $platform_ok == "" ]]; then
         # Circusd bugged version, rebuilding platform
-        tsuru-admin platform-update $1 --dockerfile $dockerfile
+        tsuru-admin platform-update "$1" --dockerfile "$dockerfile"
     fi
-    local platform_ok=$(docker run --rm ${host_ip}:3030/tsuru/$1 bash -c 'source /var/lib/tsuru/config && ${VENV_DIR}/bin/circusd --daemon /etc/circus/circus.ini && sleep 2 && ps aux | grep circusd | grep -v grep')
+    local platform_ok=$(docker run --rm "${host_ip}:3030/tsuru/$1" bash -c 'source /var/lib/tsuru/config && ${VENV_DIR}/bin/circusd --daemon /etc/circus/circus.ini && sleep 2 && ps aux | grep circusd | grep -v grep')
     if [[ $platform_ok == "" ]]; then
         echo "Error trying to start circus inside $1 docker image. Please report this as a bug in https://github.com/tsuru/now/issues"
         echo "Additional information:"
@@ -456,7 +454,7 @@ function install_dashboard {
     git reset --hard
     git clean -dfx
     git pull
-    git remote add tsuru git@${host_name}:tsuru-dashboard.git || true
+    git remote add tsuru "git@${host_name}:tsuru-dashboard.git" || true
     git push tsuru master
     popd
     popd
@@ -480,14 +478,14 @@ function install_tsuru_client {
 
 function install_tsuru_src {
     echo "Installing Tsuru from source (this could take some minutes)..."
-    if [[ -e $GOPATH/src/github.com/tsuru/tsuru ]]; then
-        pushd $GOPATH/src/github.com/tsuru/tsuru
+    if [[ -e ${GOPATH}/src/github.com/tsuru/tsuru ]]; then
+        pushd "${GOPATH}/src/github.com/tsuru/tsuru"
         git reset --hard && git clean -dfx && git pull
         godep restore
         popd
     else
-        mkdir -p $GOPATH/src/github.com/tsuru/tsuru
-        pushd $GOPATH/src/github.com/tsuru/tsuru
+        mkdir -p "${GOPATH}/src/github.com/tsuru/tsuru"
+        pushd "${GOPATH}/src/github.com/tsuru/tsuru"
         git clone https://github.com/tsuru/tsuru .
         godep restore
         popd
@@ -495,10 +493,10 @@ function install_tsuru_src {
     go get github.com/tsuru/tsuru/cmd/tsr
     go get -d github.com/tsuru/tsuru-admin
     go get github.com/tsuru/tsuru-client/tsuru
-    sed "s/0\.4\.3/0.5.0/g" -i $(echo $GOPATH | awk -F ':' '{print $1}')/src/github.com/tsuru/tsuru-admin/main.go
+    sed "s/0\.4\.3/0.5.0/g" -i $(echo "${GOPATH}" | awk -F ':' '{print $1}')/src/github.com/tsuru/tsuru-admin/main.go
     go install github.com/tsuru/tsuru-admin
-    sed "s/0\.5\.0/0.4.3/g" -i $(echo $GOPATH | awk -F ':' '{print $1}')/src/github.com/tsuru/tsuru-admin/main.go
-    sudo cp $(echo $GOPATH | awk -F ':' '{print $1}')/bin/{tsr,tsuru-admin,tsuru} /usr/local/bin
+    sed "s/0\.5\.0/0.4.3/g" -i $(echo "${GOPATH}" | awk -F ':' '{print $1}')/src/github.com/tsuru/tsuru-admin/main.go
+    sudo cp $(echo "${GOPATH}" | awk -F ':' '{print $1}')/bin/{tsr,tsuru-admin,tsuru} /usr/local/bin
 
     screen -X -S api quit || true
     screen -S api -d -m tsr api --config=/etc/tsuru/tsuru.conf
@@ -599,7 +597,7 @@ function config_git_key {
 }
 
 function add_git_envs {
-    if [[ "${#git_envs[@]}" > 1 ]]; then
+    if [[ "${#git_envs[@]}" -gt 1 ]]; then
         echo "Serializing provided env vars to ~git/.bash_profile"
         echo export ${git_envs[@]:1} | sudo tee -a ~git/.bash_profile > /dev/null
     fi
