@@ -58,6 +58,7 @@ auth:
   user-registration: true
   scheme: native
 
+repo-manager: gandalf
 provisioner: docker
 hipache:
   domain: {{{HOST_NAME}}}
