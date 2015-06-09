@@ -62,7 +62,9 @@ repo-manager: gandalf
 provisioner: docker
 hipache:
   domain: {{{HOST_NAME}}}
-queue: redis
+queue:
+  mongo-url: {{{MONGO_HOST}}}:{{{MONGO_PORT}}}
+  mongo-database: tsuru_queue
 redis-queue:
   host: localhost
   port: 6379
