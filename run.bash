@@ -417,9 +417,18 @@ function enable_initial_user {
 function add_as_docker_node {
     echo "Adding docker node to pool..."
     tsuru-admin docker-pool-add $docker_pool 2>/dev/null || true
+    amount=0
     for node in $docker_node; do
         tsuru-admin docker-node-add --register address="http://${node}" pool=$docker_pool 2>/dev/null || true
+        amount=$((amount+1))
     done
+    set +e
+    status=1
+    while [ $status != 0 ]; do
+        tsuru-admin docker-node-list | grep "| http://" | wc -l | grep -q "${amount}$"
+        status=$?
+    done
+    set -e
 }
 
 function install_platform {
