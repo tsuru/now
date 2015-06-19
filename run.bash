@@ -14,6 +14,7 @@ set_interface=""
 is_debug=""
 docker_node=""
 set_interface=""
+router=""
 install_func=install_all
 docker_pool="theonepool"
 mongohost="127.0.0.1"
@@ -57,11 +58,17 @@ git:
 auth:
   user-registration: true
   scheme: native
-
+routers:
+  vulcand:
+    type: vulcand
+    api-url: http://127.0.0.1:8182
+    domain: {{{HOST_NAME}}}
+  hipache:
+    type: hipache
+    domain: {{{HOST_NAME}}}
+    redis-server: 127.0.0.1:6379
 repo-manager: gandalf
 provisioner: docker
-hipache:
-  domain: {{{HOST_NAME}}}
 queue:
   mongo-url: {{{MONGO_HOST}}}:{{{MONGO_PORT}}}
   mongo-database: tsuru_queue
@@ -76,7 +83,7 @@ docker:
   collection: docker_containers
   registry: {{{HOST_IP}}}:$registryport
   repository-namespace: tsuru
-  router: hipache
+  router: {{{ROUTER}}}
   deploy-cmd: /var/lib/tsuru/deploy
   segregate: true
   cluster:
@@ -162,6 +169,7 @@ function set_host {
 
     if [[ $host_name == "" ]]; then
         host_name="$host_ip.nip.io"
+        dockerhost=$host_name
         echo "$host_ip $host_name" | sudo tee -a /etc/hosts
     fi
     echo "Chosen host name: $host_name. You can override with --host-name <hostname>"
@@ -311,6 +319,14 @@ function install_hipache {
         exit 1
     fi
     echo "node hipache found running at $addr"
+    router="hipache"
+}
+
+function install_vulcand {
+    docker rm -f tsuru_etcd tsuru_vulcand || true
+    docker run -d -p 4001:4001 --name tsuru_etcd quay.io/coreos/etcd:v2.0.12 --listen-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001 --advertise-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001
+    docker run -d -p 8182:8182 -p 80:8181 --name tsuru_vulcand mailgun/vulcand:v0.8.0-beta.2 /go/bin/vulcand -apiInterface="0.0.0.0" --etcd=http://172.17.42.1:4001
+    router="vulcand"
 }
 
 function install_gandalf {
@@ -381,6 +397,7 @@ function config_tsuru_pre {
     sudo sed -i.old -e "s/{{{HOST_NAME}}}/${host_name}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{MONGO_HOST}}}/${mongohost}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{MONGO_PORT}}}/${mongoport}/g" /etc/tsuru/tsuru.conf
+    sudo sed -i.old -e "s/{{{ROUTER}}}/${router}/g" /etc/tsuru/tsuru.conf
     if [[ -e /etc/default/tsuru-server ]]; then
         sudo sed -i.old -e 's/=no/=yes/' /etc/default/tsuru-server
     fi
@@ -626,7 +643,11 @@ function install_all {
     install_docker
     install_docker_registry
     install_mongo
-    install_hipache
+    if [[ ${tsuru_ppa_source-"nightly"} == "nightly" ]]; then
+        install_vulcand
+    else
+        install_hipache
+    fi
     install_gandalf
     if [[ ${install_tsuru_source-} == "1" ]]; then
         config_tsuru_pre
@@ -680,7 +701,11 @@ function install_server {
     install_docker
     install_docker_registry
     install_mongo
-    install_hipache
+    if [[ ${tsuru_ppa_source-"nightly"} == "nightly" ]]; then
+        install_vulcand
+    else
+        install_hipache
+    fi
     install_gandalf
     install_tsuru_pkg
     if [[ ${install_archive_server} == "1" ]]; then
