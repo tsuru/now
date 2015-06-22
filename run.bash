@@ -99,8 +99,6 @@ docker:
 EOF
 )
 
-#############################################################################
-
 function error {
     echo "$@" 1>&2
 }
@@ -133,8 +131,6 @@ function installed_version {
         echo "${max_version}"
     fi
 }
-
-#############################################################################
 
 function public_ip {
     local ip=$(curl -s -L -m2 http://169.254.169.254/latest/meta-data/public-ipv4 || true)
