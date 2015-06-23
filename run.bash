@@ -408,7 +408,7 @@ function config_tsuru_pre {
     elif [[ $router == "vulcand" ]]; then
         router_entry="${ROUTER_VULCAND}"
     fi
-    sudo sed -i.old -e "s/{{{ROUTER_ENTRY}}}/${router_entry}/g" /etc/tsuru/tsuru.conf
+    sudo perl -pi.old -e "s/{{{ROUTER_ENTRY}}}/${router_entry}/g" /etc/tsuru/tsuru.conf
     if [[ -e /etc/default/tsuru-server ]]; then
         sudo sed -i.old -e 's/=no/=yes/' /etc/default/tsuru-server
     fi
