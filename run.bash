@@ -405,7 +405,7 @@ function config_tsuru_pre {
     sudo sed -i.old -e "s/{{{ROUTER}}}/${router}/g" /etc/tsuru/tsuru.conf
     if [[ $router == "hipache" ]]; then
         router_entry="${ROUTER_HIPACHE}"
-    elif [[ $router == "vulcand" ]]
+    elif [[ $router == "vulcand" ]]; then
         router_entry="${ROUTER_VULCAND}"
     fi
     sudo sed -i.old -e "s/{{{ROUTER_ENTRY}}}/${router_entry}/g" /etc/tsuru/tsuru.conf
