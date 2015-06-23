@@ -398,17 +398,17 @@ function install_go {
 function config_tsuru_pre {
     sudo mkdir -p /etc/tsuru
     echo "$TSURU_CONF" | sudo tee /etc/tsuru/tsuru.conf > /dev/null
-    sudo sed -i.old -e "s/{{{HOST_IP}}}/${host_ip}/g" /etc/tsuru/tsuru.conf
-    sudo sed -i.old -e "s/{{{HOST_NAME}}}/${host_name}/g" /etc/tsuru/tsuru.conf
-    sudo sed -i.old -e "s/{{{MONGO_HOST}}}/${mongohost}/g" /etc/tsuru/tsuru.conf
-    sudo sed -i.old -e "s/{{{MONGO_PORT}}}/${mongoport}/g" /etc/tsuru/tsuru.conf
-    sudo sed -i.old -e "s/{{{ROUTER}}}/${router}/g" /etc/tsuru/tsuru.conf
     if [[ $router == "hipache" ]]; then
         router_entry="${ROUTER_HIPACHE}"
     elif [[ $router == "vulcand" ]]; then
         router_entry="${ROUTER_VULCAND}"
     fi
     sudo perl -pi.old -e "s/{{{ROUTER_ENTRY}}}/${router_entry}/g" /etc/tsuru/tsuru.conf
+    sudo sed -i.old -e "s/{{{HOST_IP}}}/${host_ip}/g" /etc/tsuru/tsuru.conf
+    sudo sed -i.old -e "s/{{{HOST_NAME}}}/${host_name}/g" /etc/tsuru/tsuru.conf
+    sudo sed -i.old -e "s/{{{MONGO_HOST}}}/${mongohost}/g" /etc/tsuru/tsuru.conf
+    sudo sed -i.old -e "s/{{{MONGO_PORT}}}/${mongoport}/g" /etc/tsuru/tsuru.conf
+    sudo sed -i.old -e "s/{{{ROUTER}}}/${router}/g" /etc/tsuru/tsuru.conf
     if [[ -e /etc/default/tsuru-server ]]; then
         sudo sed -i.old -e 's/=no/=yes/' /etc/default/tsuru-server
     fi
