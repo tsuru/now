@@ -41,6 +41,22 @@ declare -A DISTMAP=(
     [utopic]=utopic
 )
 
+ROUTER_HIPACHE=$(cat <<EOF
+  hipache:
+    type: hipache
+    domain: {{{HOST_NAME}}}
+    redis-server: 127.0.0.1:6379
+EOF
+)
+
+ROUTER_VULCAND=$(cat <<EOF
+  vulcand:
+    type: vulcand
+    api-url: http://127.0.0.1:8182
+    domain: {{{HOST_NAME}}}
+EOF
+)
+
 TSURU_CONF=$(cat <<EOF
 listen: "0.0.0.0:8080"
 host: http://{{{HOST_IP}}}:8080
@@ -59,14 +75,7 @@ auth:
   user-registration: true
   scheme: native
 routers:
-  vulcand:
-    type: vulcand
-    api-url: http://127.0.0.1:8182
-    domain: {{{HOST_NAME}}}
-  hipache:
-    type: hipache
-    domain: {{{HOST_NAME}}}
-    redis-server: 127.0.0.1:6379
+{{{ROUTER_ENTRY}}}
 repo-manager: gandalf
 provisioner: docker
 queue:
@@ -394,6 +403,12 @@ function config_tsuru_pre {
     sudo sed -i.old -e "s/{{{MONGO_HOST}}}/${mongohost}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{MONGO_PORT}}}/${mongoport}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{ROUTER}}}/${router}/g" /etc/tsuru/tsuru.conf
+    if [[ $router == "hipache" ]]; then
+        router_entry="${ROUTER_HIPACHE}"
+    elif [[ $router == "vulcand" ]]
+        router_entry="${ROUTER_VULCAND}"
+    fi
+    sudo sed -i.old -e "s/{{{ROUTER_ENTRY}}}/${router_entry}/g" /etc/tsuru/tsuru.conf
     if [[ -e /etc/default/tsuru-server ]]; then
         sudo sed -i.old -e 's/=no/=yes/' /etc/default/tsuru-server
     fi
