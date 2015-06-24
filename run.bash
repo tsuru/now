@@ -403,7 +403,7 @@ function config_tsuru_pre {
     elif [[ $router == "vulcand" ]]; then
         router_entry="${ROUTER_VULCAND}"
     fi
-    sudo perl -pi.old -e "s/{{{ROUTER_ENTRY}}}/${router_entry}/g" /etc/tsuru/tsuru.conf
+    sudo perl -pi.old -e "s;{{{ROUTER_ENTRY}}};${router_entry};g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{HOST_IP}}}/${host_ip}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{HOST_NAME}}}/${host_name}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{MONGO_HOST}}}/${mongohost}/g" /etc/tsuru/tsuru.conf
