@@ -16,7 +16,7 @@ docker_node=""
 set_interface=""
 router=""
 install_func=install_all
-docker_pool="theonepool"
+pool="theonepool"
 mongohost="127.0.0.1"
 mongoport="27017"
 dockerhost="127.0.0.1"
@@ -448,10 +448,10 @@ function enable_initial_user {
 
 function add_as_docker_node {
     echo "Adding docker node to pool..."
-    tsuru-admin docker-pool-add $docker_pool 2>/dev/null || true
+    tsuru-admin pool-add $pool -p 2>/dev/null || tsuru-admin pool-add $pool 2>/dev/null || true
     amount=0
     for node in $docker_node; do
-        tsuru-admin docker-node-add --register address="http://${node}" pool=$docker_pool 2>/dev/null || true
+        tsuru-admin docker-node-add --register address="http://${node}" pool=$pool 2>/dev/null || true
         amount=$((amount+1))
     done
     set +e
@@ -841,7 +841,7 @@ while [ "${1-}" != "" ]; do
             ;;
         "-P" | "--docker-pool")
             shift
-            docker_pool=$1
+            pool=$1
             ;;
         "-I" | "--set-interface")
             set_interface="y"
