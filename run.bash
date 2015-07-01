@@ -21,7 +21,7 @@ mongohost="127.0.0.1"
 mongoport="27017"
 dockerhost="127.0.0.1"
 dockerport="2375"
-registryport="3030"
+registryport="5000"
 adminuser="admin@example.com"
 adminpassword="admin123"
 install_archive_server=0
@@ -266,17 +266,8 @@ function install_docker {
 
 function install_docker_registry {
     echo "Installing docker-registry..."
-    sudo apt-get update -qq
-    sudo apt-get install docker-registry -qqy
-    local opts=$(bash -c 'source /etc/default/docker-registry && echo $DOCKER_REGISTRY_LISTEN')
-    if [[ $opts != "0.0.0.0:$registryport" ]]; then
-        echo "Changing /etc/default/docker-registry to listen on tcp://0.0.0.0:${registryport}..."
-        echo "DOCKER_REGISTRY_LISTEN=\":${registryport}\"" | sudo tee /etc/default/docker-registry > /dev/null
-    fi
-    sudo service docker-registry stop 1>&2 2>/dev/null || true
-    sleep 1
-    sudo service docker-registry start
-    sleep 5
+    sudo mkdir -p /var/lib/registry
+    docker run -d -p ${registryport}:${registryport} -e REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry -v /var/lib/registry:/var/lib/registry --restart=always --name registry registry:2
 }
 
 function install_mongo {
@@ -470,12 +461,12 @@ function install_platform {
     if [[ $has_plat == "" ]]; then
         tsuru-admin platform-add "$1" --dockerfile "$dockerfile"
     fi
-    local platform_ok=$(docker run --rm "${host_ip}:3030/tsuru/$1" bash -c 'source /var/lib/tsuru/config && ${VENV_DIR}/bin/circusd --daemon /etc/circus/circus.ini && sleep 2 && ps aux | grep circusd | grep -v grep')
+    local platform_ok=$(docker run --rm "${host_ip}:5000/tsuru/$1" bash -c 'source /var/lib/tsuru/config && ${VENV_DIR}/bin/circusd --daemon /etc/circus/circus.ini && sleep 2 && ps aux | grep circusd | grep -v grep')
     if [[ $platform_ok == "" ]]; then
         # Circusd bugged version, rebuilding platform
         tsuru-admin platform-update "$1" --dockerfile "$dockerfile"
     fi
-    local platform_ok=$(docker run --rm "${host_ip}:3030/tsuru/$1" bash -c 'source /var/lib/tsuru/config && ${VENV_DIR}/bin/circusd --daemon /etc/circus/circus.ini && sleep 2 && ps aux | grep circusd | grep -v grep')
+    local platform_ok=$(docker run --rm "${host_ip}:5000/tsuru/$1" bash -c 'source /var/lib/tsuru/config && ${VENV_DIR}/bin/circusd --daemon /etc/circus/circus.ini && sleep 2 && ps aux | grep circusd | grep -v grep')
     if [[ $platform_ok == "" ]]; then
         echo "Error trying to start circus inside $1 docker image. Please report this as a bug in https://github.com/tsuru/now/issues"
         echo "Additional information:"
