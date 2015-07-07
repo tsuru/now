@@ -363,15 +363,9 @@ function install_go {
         echo "Skipping go installation, version installed: $iversion"
     else
         echo "Installing go..."
-        if [[ $(uname -m | grep 64) == "" ]]; then
-            local plat="386"
-        else
-            local plat="amd64"
-        fi
-        curl -sSL https://godeb.s3.amazonaws.com/godeb-$plat.tar.gz -o /tmp/godeb.tgz
-        tar -C /tmp -zxpf /tmp/godeb.tgz
-        chmod +x /tmp/godeb
-        /tmp/godeb install
+        sudo apt-add-repository ppa:tsuru/golang -y
+        sudo apt-get update
+        sudo apt-get install golang -y
     fi
     if [[ ${GOPATH-} == "" ]]; then
         export GOPATH=$HOME/go
