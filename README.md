@@ -38,7 +38,7 @@ chmod +x run.bash
 
 ### Building a client connected to the server
 
-Assume the IP address of cluster server is 10.42.42.1
+Assume the IP address of the cluster server is 10.42.42.1
 
 ```
 curl -sL https://raw.githubusercontent.com/tsuru/now/master/run.bash > run.bash
@@ -49,7 +49,7 @@ chmod +x run.bash
 
 ### Building a docker node controlled by the server
 
-Assume the IP address of cluster server is 10.42.42.1
+Assume the IP address of the cluster server is 10.42.42.1
 
 ```
 curl -sL https://raw.githubusercontent.com/tsuru/now/master/run.bash > run.bash
