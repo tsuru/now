@@ -320,8 +320,8 @@ function install_hipache {
 
 function install_vulcand {
     docker rm -f tsuru_etcd tsuru_vulcand || true
-    docker run -d -p 4001:4001 --name tsuru_etcd quay.io/coreos/etcd:v2.0.12 --listen-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001 --advertise-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001
-    docker run -d -p 8182:8182 -p 80:8181 --name tsuru_vulcand mailgun/vulcand:v0.8.0-beta.2 /go/bin/vulcand -apiInterface="0.0.0.0" --etcd=http://172.17.42.1:4001
+    docker run -d --restart=always -p 4001:4001 --name tsuru_etcd quay.io/coreos/etcd:v2.0.12 --listen-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001 --advertise-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001
+    docker run -d --restart=always -p 8182:8182 -p 80:8181 --name tsuru_vulcand mailgun/vulcand:v0.8.0-beta.2 /go/bin/vulcand -apiInterface="0.0.0.0" --etcd=http://172.17.42.1:4001
     router="vulcand"
 }
 
