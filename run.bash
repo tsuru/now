@@ -298,7 +298,7 @@ function install_docker_registry {
 function install_mongo {
     sudo service mongod stop 1>&2 2>/dev/null || true
     sudo service mongodb stop 1>&2 2>/dev/null || true
-    sudo apt-get remove --purge mongodb-10gen mongodb-org -y || true
+    sudo apt-get remove --purge mongodb-10gen mongodb-org -y 1>&2 2> /dev/null || true
     local version=$(mongod --version 2>/dev/null | grep "db version" | sed s/^.*v//)
     local iversion=$(installed_version mongo 2.4.0 "${version}")
     if [[ $iversion != "" ]]; then
