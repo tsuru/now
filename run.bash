@@ -225,10 +225,13 @@ function install_basic_deps {
             echo 'deb http://http.debian.net/debian wheezy-backports main contrib non-free' | sudo tee /etc/apt/sources.list.d/backports.list
         fi
         sudo apt-get update -qq
-        sudo apt-get install virtualbox-guest-utils virtualbox-guest-dkms linux-image-amd64 linux-headers-amd64 -qqy -t wheezy-backports
+        sudo apt-get install virtualbox-guest-utils virtualbox-guest-dkms \
+                             linux-image-amd64 linux-headers-amd64 \
+                             -qqy -t wheezy-backports
     fi
     sudo apt-get update
-    sudo apt-get install jq screen curl mercurial git bzr redis-server software-properties-common -y
+    sudo apt-get install jq screen curl mercurial git bzr redis-server \
+                         software-properties-common apt-transport-https -y
     if [[ $ext_repository ]]; then
         curl -sS ${ext_repository}/public.key | sudo apt-key add -
         echo "deb ${ext_repository} ${DISTMAP[$codename]} main contrib" | sudo tee /etc/apt/sources.list.d/tsuru-deb.list
