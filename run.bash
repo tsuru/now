@@ -664,7 +664,7 @@ function install_all {
     install_docker
     install_docker_registry
     install_mongo
-    if [[ ${tsuru_ppa_source-"nightly"} == "nightly" ]]; then
+    if [[ ${tsuru_ppa_source-"stable"} == "nightly" ]]; then
         install_vulcand
     else
         install_hipache
@@ -717,12 +717,12 @@ function install_all {
 
 function install_server {
     check_support
-    install_basic_deps ${tsuru_ppa_source-"nightly"}
+    install_basic_deps ${tsuru_ppa_source-"stable"}
     set_host
     install_docker
     install_docker_registry
     install_mongo
-    if [[ ${tsuru_ppa_source-"nightly"} == "nightly" ]]; then
+    if [[ ${tsuru_ppa_source-"stable"} == "nightly" ]]; then
         install_vulcand
     else
         install_hipache
@@ -755,7 +755,7 @@ function install_server {
 
 function install_client {
     check_support
-    install_basic_deps ${tsuru_ppa_source-"nightly"}
+    install_basic_deps ${tsuru_ppa_source-"stable"}
     set_host
     install_tsuru_client
     install_swift
@@ -790,7 +790,7 @@ function install_client {
 
 function install_dockerfarm {
     check_support
-    install_basic_deps ${tsuru_ppa_source-"nightly"}
+    install_basic_deps ${tsuru_ppa_source-"stable"}
     set_host
     dockerhost=$(public_ip)
     install_docker
@@ -812,9 +812,9 @@ Options:
 
  -n, --host-name [name]         Set the VM's hostname
  -i, --host-ip [name]           Set the VM's IP
- -c, --tsuru-from-source        Install tsuru from master source code (default: nightly packages)
- -p, --tsuru-pkg-stable         Install tsuru from stable packages   (default: nightly packages)
- -N, --tsuru-pkg-nightly        Install tsuru from nightly build packages
+ -c, --tsuru-from-source        Install tsuru from master source code (default: stable packages)
+ -p, --tsuru-pkg-stable         Install tsuru from stable packages
+ -N, --tsuru-pkg-nightly        Install tsuru from nightly build packages (default: stable packages)
  -f, --force-install [pkg]      Force installation of named package
  -g, --gopath [path]            prepend new path to env var GOPATH
  -a, --archive-server           Install the archive server
