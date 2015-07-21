@@ -659,7 +659,7 @@ function add_git_envs {
 
 function install_all {
     check_support
-    install_basic_deps ${tsuru_ppa_source-"nightly"}
+    install_basic_deps ${tsuru_ppa_source-"stable"}
     set_host
     install_docker
     install_docker_registry
