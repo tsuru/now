@@ -928,7 +928,7 @@ while [ "${1-}" != "" ]; do
             ext_repository=$1
             ;;
         "-d" | "--docker-only")
-            install_func=install_dockerfarm
+            install_func=install_docker
             ;;
         "-w" | "--without-dashboard")
             without_dashboard=1
