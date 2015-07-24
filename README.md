@@ -30,9 +30,7 @@ With Tsuru Now, you can build your own tsuru cluster easily.
 ### Building a cluster server
 
 ```
-curl -sL https://raw.githubusercontent.com/tsuru/now/master/run.bash > run.bash
-chmod +x run.bash
-./run.bash --template server
+curl -sL https://raw.githubusercontent.com/tsuru/now/master/run.bash | bash -s -- --template server
 ```
 
 
@@ -41,9 +39,7 @@ chmod +x run.bash
 Assume the IP address of the cluster server is 10.42.42.1
 
 ```
-curl -sL https://raw.githubusercontent.com/tsuru/now/master/run.bash > run.bash
-chmod +x run.bash
-./run.bash --template client --host-ip 10.42.42.1
+curl -sL https://raw.githubusercontent.com/tsuru/now/master/run.bash | bash -s -- --template client --host-ip 10.42.42.1
 ```
 
 
@@ -52,7 +48,5 @@ chmod +x run.bash
 Assume the IP address of the cluster server is 10.42.42.1
 
 ```
-curl -sL https://raw.githubusercontent.com/tsuru/now/master/run.bash > run.bash
-chmod +x run.bash
-./run.bash --template dockerfarm --host-ip 10.42.42.1
+curl -sL https://raw.githubusercontent.com/tsuru/now/master/run.bash | bash -s -- --template dockerfarm --host-ip 10.42.42.1
 ```
