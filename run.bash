@@ -90,7 +90,7 @@ docker:
     reporter-interval: 10
     socket: /var/run/docker.sock
   collection: docker_containers
-  registry: {{{HOST_IP}}}:$registryport
+  registry: {{{PRIVATE_IP}}}:$registryport
   repository-namespace: tsuru
   router: {{{ROUTER}}}
   deploy-cmd: /var/lib/tsuru/deploy
@@ -181,6 +181,12 @@ function public_ip {
     echo "${ip}"
 }
 
+function local_ip {
+    # Try to take the public IP using AWS EC2's metadata API:
+    local ip=$(curl -s -L -m2 http://169.254.169.254/latest/meta-data/local-ipv4 || true)
+    echo "${ip}"
+}
+
 function set_host {
     if [[ "$host_ip" && "$set_interface" ]]; then
         sudo ifconfig lo:0 $host_ip netmask 255.255.255.255 up
@@ -196,10 +202,26 @@ function set_host {
 
     if [[ $host_name == "" ]]; then
         host_name="$host_ip.nip.io"
-        dockerhost=$host_name
         echo "$host_ip $host_name" | sudo tee -a /etc/hosts
     fi
     echo "Chosen host name: $host_name. You can override with --host-name <hostname>"
+}
+
+function set_local_host {
+    if [[ $private_ip == "" ]]; then
+        private_ip=$(local_ip)
+    fi
+    if [[ $private_ip == "" ]]; then
+        private_ip=$(public_ip)
+    fi
+    if [[ $private_ip == "127.0.0.1" ]]; then
+        echo "Couldn't find suitable local_ip, please run with --host-ip <external ip>"
+        exit 1
+    fi
+    if [[ $dockerhost == "" ]]; then
+        dockerhost="$private_ip"
+    fi
+    echo "Chosen dockerhost name: $dockehost."
 }
 
 function check_support {
@@ -264,7 +286,7 @@ function install_docker {
     local opts=$(bash -c 'source /etc/default/docker && echo $DOCKER_OPTS')
     if [[ ! $opts =~ :// ]]; then
         echo "Changing /etc/default/docker to listen on tcp://0.0.0.0:${dockerport}..."
-        echo "DOCKER_OPTS=\"\$DOCKER_OPTS -H tcp://0.0.0.0:${dockerport} -H unix:///var/run/docker.sock --insecure-registry=${host_ip}:${registryport}\"" | sudo tee -a /etc/default/docker > /dev/null
+        echo "DOCKER_OPTS=\"\$DOCKER_OPTS -H tcp://0.0.0.0:${dockerport} -H unix:///var/run/docker.sock --insecure-registry=${dockerhost}:${registryport}\"" | sudo tee -a /etc/default/docker > /dev/null
     fi
     sudo service docker stop 1>&2 2>/dev/null || true
     sudo service docker start
@@ -415,6 +437,7 @@ function config_tsuru_pre {
     fi
     sudo perl -pi.old -e "s;{{{ROUTER_ENTRY}}};${router_entry};g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{HOST_IP}}}/${host_ip}/g" /etc/tsuru/tsuru.conf
+    sudo sed -i.old -e "s/{{{PRIVATE_IP}}}/${dockerhost}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{HOST_NAME}}}/${host_name}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{MONGO_HOST}}}/${mongohost}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{MONGO_PORT}}}/${mongoport}/g" /etc/tsuru/tsuru.conf
@@ -480,12 +503,12 @@ function install_platform {
     if [[ $has_plat == "" ]]; then
         tsuru-admin platform-add "$1" --dockerfile "$dockerfile"
     fi
-    local platform_ok=$(docker run --rm "${host_ip}:5000/tsuru/$1" bash -c 'source /var/lib/tsuru/config && ${VENV_DIR}/bin/circusd --daemon /etc/circus/circus.ini && sleep 2 && ps aux | grep circusd | grep -v grep')
+    local platform_ok=$(docker run --rm "${dockerhost}:5000/tsuru/$1" bash -c 'source /var/lib/tsuru/config && ${VENV_DIR}/bin/circusd --daemon /etc/circus/circus.ini && sleep 2 && ps aux | grep circusd | grep -v grep')
     if [[ $platform_ok == "" ]]; then
         # Circusd bugged version, rebuilding platform
         tsuru-admin platform-update "$1" --dockerfile "$dockerfile"
     fi
-    local platform_ok=$(docker run --rm "${host_ip}:5000/tsuru/$1" bash -c 'source /var/lib/tsuru/config && ${VENV_DIR}/bin/circusd --daemon /etc/circus/circus.ini && sleep 2 && ps aux | grep circusd | grep -v grep')
+    local platform_ok=$(docker run --rm "${dockerhost}:5000/tsuru/$1" bash -c 'source /var/lib/tsuru/config && ${VENV_DIR}/bin/circusd --daemon /etc/circus/circus.ini && sleep 2 && ps aux | grep circusd | grep -v grep')
     if [[ $platform_ok == "" ]]; then
         echo "Error trying to start circus inside $1 docker image. Please report this as a bug in https://github.com/tsuru/now/issues"
         echo "Additional information:"
@@ -792,7 +815,10 @@ function install_dockerfarm {
     check_support
     install_basic_deps ${tsuru_ppa_source-"stable"}
     set_host
-    dockerhost=$(public_ip)
+    dockerhost=$(local_ip)
+    if [[ $dockerhost == "" ]]; then
+        dockerhost=$(public_ip)
+    fi
     install_docker
     install_tsuru_client
     config_tsuru_post
