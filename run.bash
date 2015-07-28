@@ -143,7 +143,7 @@ function installed_version {
 
 function get_inet_addr() {
     # Return IP address based on ifconfig's output
-    /sbin/ifconfig $1 2> /dev/null | grep "inet addr" | tail -n1 | \
+    /sbin/ifconfig | grep -A1 $1 2> /dev/null | grep "inet addr" | tail -n1 | \
                                      sed "s/[^:]*:\([0-9.]*\).*/\1/"
 }
 
