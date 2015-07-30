@@ -481,7 +481,7 @@ function enable_initial_user {
 
 function add_as_docker_node {
     echo "Adding docker node to pool..."
-    tsuru-admin pool-add $pool -p 2>/dev/null || tsuru-admin pool-add $pool 2>/dev/null || true
+    tsuru-admin pool-add $pool -p -d 2>/dev/null || tsuru-admin pool-add $pool 2>/dev/null || true
     amount=0
     for node in $docker_node; do
         tsuru-admin docker-node-add --register address="http://${node}" pool=$pool 2>/dev/null || true
