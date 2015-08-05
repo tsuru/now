@@ -571,23 +571,23 @@ function install_tsuru_src {
         godep restore
         popd
     fi
-    go get github.com/tsuru/tsuru/cmd/tsr
+    go get github.com/tsuru/tsuru/cmd/tsurud
     go get -d github.com/tsuru/tsuru-admin
     go get github.com/tsuru/tsuru-client/tsuru
     sed "s/0\.4\.3/0.5.0/g" -i $(echo "${GOPATH}" | awk -F ':' '{print $1}')/src/github.com/tsuru/tsuru-admin/main.go
     go install github.com/tsuru/tsuru-admin
     sed "s/0\.5\.0/0.4.3/g" -i $(echo "${GOPATH}" | awk -F ':' '{print $1}')/src/github.com/tsuru/tsuru-admin/main.go
-    sudo cp $(echo "${GOPATH}" | awk -F ':' '{print $1}')/bin/{tsr,tsuru-admin,tsuru} /usr/local/bin
+    sudo cp $(echo "${GOPATH}" | awk -F ':' '{print $1}')/bin/{tsurud,tsuru-admin,tsuru} /usr/local/bin
 
     screen -X -S api quit || true
-    screen -S api -d -m tsr api --config=/etc/tsuru/tsuru.conf
+    screen -S api -d -m tsurud api --config=/etc/tsuru/tsuru.conf
 
-    local tsraddr=$(running_addr tsr)
-    if [[ $tsraddr == "" ]]; then
-        echo "Error: Couldn't find tsr api addr, please check /var/log/syslog for more information"
+    local tsurudaddr=$(running_addr tsurud)
+    if [[ $tsurudaddr == "" ]]; then
+        echo "Error: Couldn't find tsurud addr, please check /var/log/syslog for more information"
         exit 1
     fi
-    echo "tsr api found running at $tsraddr"
+    echo "tsurud api found running at $tsurudaddr"
 }
 
 function install_archive_server_pkg {
@@ -665,13 +665,13 @@ END
 function config_git_key {
     local tsuru_token=$(bash -ic 'source ~git/.bash_profile && echo $TSURU_TOKEN')
     if [[ $tsuru_token == "" ]]; then
-        echo "Adding tsr token to ~git/.bash_profile"
-        local token=$(tsr token)
+        echo "Adding tsurud token to ~git/.bash_profile"
+        local token=$(tsurud token || tsr token)
         echo "export TSURU_TOKEN=$token" | sudo tee -a ~git/.bash_profile > /dev/null
     fi
     local tsuru_host=$(bash -ic 'source ~git/.bash_profile && echo $TSURU_HOST')
     if [[ $tsuru_host != "$host_name:8080" ]]; then
-        echo "Adding tsr host to ~git/.bash_profile"
+        echo "Adding tsurud host to ~git/.bash_profile"
         echo "export TSURU_HOST=$host_name:8080" | sudo tee -a ~git/.bash_profile > /dev/null
     fi
     sudo chown -R git:git ~git/.bash_profile
