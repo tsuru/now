@@ -468,11 +468,11 @@ function enable_initial_user {
         echo "${token}" > ~/.tsuru_token
     fi
     mkdir -p ~/.ssh
-    if ! grep -Pzo "Host ${host_ip}\s+StrictHostKeyChecking no" ~/.ssh/config >/dev/null; then
-        echo -e "Host ${host_ip}\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+    if ! grep -Pzo "Host ${private_ip}\s+StrictHostKeyChecking no" ~/.ssh/config >/dev/null; then
+        echo -e "Host ${private_ip}\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
     fi
-    if ! grep -Pzo "Host ${host_name}\s+StrictHostKeyChecking no" ~/.ssh/config >/dev/null; then
-        echo -e "Host ${host_name}\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+    if ! grep -Pzo "Host ${private_ip}\s+StrictHostKeyChecking no" ~/.ssh/config >/dev/null; then
+        echo -e "Host ${private_ip}\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
     fi
     if [[ ! -e ~/.ssh/id_rsa ]]; then
         yes | ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa > /dev/null
@@ -593,9 +593,9 @@ function install_archive_server_pkg {
     sudo service archive-server stop || true
 
     local archive_server_read=$(bash -ic 'source ~git/.bash_profile && echo $ARCHIVE_SERVER_READ')
-    if [[ $archive_server_read != "http://${host_ip}:6161" ]]; then
+    if [[ $archive_server_read != "http://${private_ip}:6161" ]]; then
         echo "Adding archive server environment to ~git/.bash_profile"
-        echo "export ARCHIVE_SERVER_READ=http://${host_ip}:6060" | sudo tee -a ~git/.bash_profile > /dev/null
+        echo "export ARCHIVE_SERVER_READ=http://${private_ip}:6060" | sudo tee -a ~git/.bash_profile > /dev/null
         echo "export ARCHIVE_SERVER_WRITE=http://127.0.0.1:6161" | sudo tee -a ~git/.bash_profile > /dev/null
     fi
 
@@ -667,9 +667,9 @@ function config_git_key {
         echo "export TSURU_TOKEN=$token" | sudo tee -a ~git/.bash_profile > /dev/null
     fi
     local tsuru_host=$(bash -ic 'source ~git/.bash_profile && echo $TSURU_HOST')
-    if [[ $tsuru_host != "$host_name:8080" ]]; then
+    if [[ $tsuru_host != "$private_ip:8080" ]]; then
         echo "Adding tsurud host to ~git/.bash_profile"
-        echo "export TSURU_HOST=$host_name:8080" | sudo tee -a ~git/.bash_profile > /dev/null
+        echo "export TSURU_HOST=$private_ip:8080" | sudo tee -a ~git/.bash_profile > /dev/null
     fi
     sudo chown -R git:git ~git/.bash_profile
 }
