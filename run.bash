@@ -9,6 +9,7 @@ set -eu
 release=""
 codename=""
 host_ip=""
+private_ip=""
 host_name=""
 set_interface=""
 is_debug=""
@@ -218,10 +219,6 @@ function set_local_host {
         echo "Couldn't find suitable local_ip, please run with --host-ip <external ip>"
         exit 1
     fi
-    if [[ $dockerhost == "" ]]; then
-        dockerhost="$private_ip"
-    fi
-    echo "Chosen dockerhost name: $dockehost."
 }
 
 function check_support {
@@ -453,7 +450,7 @@ function config_tsuru_pre {
 
 function config_tsuru_post {
     tsuru-admin target-remove default
-    tsuru-admin target-add default "${host_name}:8080" || true
+    tsuru-admin target-add default "${private_ip}:8080" || true
     tsuru-admin target-set default
 }
 
@@ -461,13 +458,13 @@ function create_initial_user {
     echo "Creating initial admin user..."
     mongo tsurudb --eval 'db.teams.update({_id: "admin"}, {_id: "admin"}, {upsert: true})'
     mongo tsurudb --eval "db.teams.update({_id: 'admin'}, {\$addToSet: {users: '${adminuser}'}})"
-    curl -sS -XPOST -d"{\"email\":\"${adminuser}\",\"password\":\"${adminpassword}\"}" "http://${host_name}:8080/users"
+    curl -sS -XPOST -d"{\"email\":\"${adminuser}\",\"password\":\"${adminpassword}\"}" "http://${private_ip}:8080/users"
 }
 
 function enable_initial_user {
     echo "Retriving token and uploading public key for initial admin user..."
     if [[ ! -e ~/.tsuru_token ]]; then
-        local token=$(curl -sS -XPOST -d"{\"password\":\"${adminpassword}\"}" "http://${host_name}:8080/users/${adminuser}/tokens" | jq -r .token)
+        local token=$(curl -sS -XPOST -d"{\"password\":\"${adminpassword}\"}" "http://${private_ip}:8080/users/${adminuser}/tokens" | jq -r .token)
         echo "${token}" > ~/.tsuru_token
     fi
     mkdir -p ~/.ssh
@@ -687,6 +684,7 @@ function add_git_envs {
 function install_all {
     check_support
     install_basic_deps ${tsuru_ppa_source-"stable"}
+    set_local_host
     set_host
     install_docker
     install_docker_registry
@@ -745,6 +743,7 @@ function install_all {
 function install_server {
     check_support
     install_basic_deps ${tsuru_ppa_source-"stable"}
+    set_local_host
     set_host
     install_docker
     install_docker_registry
@@ -783,6 +782,7 @@ function install_server {
 function install_client {
     check_support
     install_basic_deps ${tsuru_ppa_source-"stable"}
+    set_local_host
     set_host
     install_tsuru_client
     install_swift
@@ -818,6 +818,7 @@ function install_client {
 function install_dockerfarm {
     check_support
     install_basic_deps ${tsuru_ppa_source-"stable"}
+    set_local_host
     set_host
     dockerhost=$(local_ip)
     if [[ $dockerhost == "" ]]; then
