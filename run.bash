@@ -453,7 +453,7 @@ function config_tsuru_pre {
 
 function config_tsuru_post {
     tsuru-admin target-remove default
-    tsuru-admin target-add default "${private_ip}:8080" || true
+    tsuru-admin target-add default "${host_name}:8080" || true
     tsuru-admin target-set default
 }
 
