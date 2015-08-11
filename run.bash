@@ -812,6 +812,7 @@ function install_client {
         echo "Installed apps:"
         sleep 1
         tsuru app-list
+        echo "Make sure that both ports 8080/tcp and 80/tcp are accessible remotely."
     fi
 }
 
