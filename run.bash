@@ -532,7 +532,7 @@ function install_dashboard {
     git reset --hard
     git clean -dfx
     git pull
-    git remote add tsuru "git@${host_name}:tsuru-dashboard.git" || true
+    git remote add tsuru "git@${private_ip}:tsuru-dashboard.git" || true
     git push tsuru master
     popd
     popd
