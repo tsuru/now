@@ -726,11 +726,11 @@ function install_all {
     echo
     echo "Admin user: ${adminuser}"
     echo "Admin password: ${adminpassword} (PLEASE CHANGE RUNNING: tsuru change-password)"
-    echo "Target address: $host_ip:8080"
+    echo "Target address: http://$host_ip:8080"
     if [[ ${without_dashboard-} != "1" ]]; then
         local cont_id=$(docker ps | grep tsuru-dashboard | cut -d ' ' -f 1)
         local dashboard_port=$(docker inspect $cont_id | grep HostPort  | head -n1 | sed "s/[^0-9]//g")
-        echo "Dashboard address: $host_ip:$dashboard_port"
+        echo "Dashboard address: http://$host_ip:$dashboard_port"
         echo
         echo "You should run \`source ~/.bashrc\` on your current terminal."
         echo
