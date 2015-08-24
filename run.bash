@@ -280,9 +280,9 @@ function install_docker {
     else
         echo "Installing docker..."
         curl -sS https://get.docker.com/gpg | sudo apt-key add -
-        echo "deb https://get.docker.com/ubuntu docker main" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        echo "deb https://apt.dockerproject.org/repo ubuntu-trusty main" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
         sudo apt-get update
-        sudo apt-get install lxc-docker -y
+        sudo apt-get install docker-engine -y
     fi
     local opts=$(bash -c 'source /etc/default/docker && echo $DOCKER_OPTS')
     if [[ ! $opts =~ :// ]]; then
