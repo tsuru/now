@@ -292,9 +292,6 @@ function install_docker {
     fi
     sudo service docker stop 1>&2 2>/dev/null || true
     sudo service docker start
-    sleep 1
-    sudo service docker stop 1>&2 2>/dev/null || true
-    sudo service docker start
     sleep 5
     dockerport=$(running_port docker)
     if [[ $dockerport == "" ]]; then
