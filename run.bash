@@ -22,6 +22,7 @@ mongohost="127.0.0.1"
 mongoport="27017"
 dockerhost="127.0.0.1"
 dockerport="2375"
+registryhost=""
 registryport="5000"
 adminuser="admin@example.com"
 adminpassword="admin123"
@@ -91,7 +92,7 @@ docker:
     reporter-interval: 10
     socket: /var/run/docker.sock
   collection: docker_containers
-  registry: {{{PRIVATE_IP}}}:$registryport
+  registry: {{{REGISTRY_HOST}}}:$registryport
   repository-namespace: tsuru
   router: {{{ROUTER}}}
   deploy-cmd: /var/lib/tsuru/deploy
@@ -273,6 +274,9 @@ function install_basic_deps {
 }
 
 function install_docker {
+    if [[ ${registryhost} == "" ]]; then
+        registryhost=${dockerhost}
+    fi
     local version=$(docker version 2>/dev/null | grep "Client version" | cut -d" " -f3)
     local iversion=$(installed_version docker 0.20.0 "${version}")
     if [[ $iversion != "" ]]; then
@@ -284,7 +288,7 @@ function install_docker {
     local opts=$(bash -c 'source /etc/default/docker && echo $DOCKER_OPTS')
     if [[ ! $opts =~ :// ]]; then
         echo "Changing /etc/default/docker to listen on tcp://0.0.0.0:${dockerport}..."
-        echo "DOCKER_OPTS=\"\$DOCKER_OPTS -H tcp://0.0.0.0:${dockerport} -H unix:///var/run/docker.sock --insecure-registry=${dockerhost}:${registryport}\"" | sudo tee -a /etc/default/docker > /dev/null
+        echo "DOCKER_OPTS=\"\$DOCKER_OPTS -H tcp://0.0.0.0:${dockerport} -H unix:///var/run/docker.sock --insecure-registry=${registryhost}:${registryport}\"" | sudo tee -a /etc/default/docker > /dev/null
     fi
     sudo service docker stop 1>&2 2>/dev/null || true
     sudo service docker start
@@ -436,6 +440,7 @@ function config_tsuru_pre {
     sudo perl -pi.old -e "s;{{{ROUTER_ENTRY}}};${router_entry};g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{HOST_IP}}}/${host_ip}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{PRIVATE_IP}}}/${dockerhost}/g" /etc/tsuru/tsuru.conf
+    sudo sed -i.old -e "s/{{{REGISTRY_HOST}}}/${registryhost}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{HOST_NAME}}}/${host_name}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{MONGO_HOST}}}/${mongohost}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{MONGO_PORT}}}/${mongoport}/g" /etc/tsuru/tsuru.conf
@@ -684,7 +689,9 @@ function install_all {
     set_local_host
     set_host
     install_docker
-    install_docker_registry
+    if [[ "${registryhost}" == "${dockerhost}" ]]; then
+        install_docker_registry
+    fi
     install_mongo
     if [[ ${tsuru_ppa_source-"stable"} == "nightly" ]]; then
         install_vulcand
@@ -743,7 +750,9 @@ function install_server {
     set_local_host
     set_host
     install_docker
-    install_docker_registry
+    if [[ "${registryhost}" == "${dockerhost}" ]]; then
+        install_docker_registry
+    fi
     install_mongo
     if [[ ${tsuru_ppa_source-"stable"} == "nightly" ]]; then
         install_vulcand
@@ -961,6 +970,10 @@ while [ "${1-}" != "" ]; do
             ;;
         "-w" | "--without-dashboard")
             without_dashboard=1
+            ;;
+        "-R" | "--registryhost")
+            shift
+            registryhost=$1
             ;;
         * | "-h" | "--help")
             show_help
