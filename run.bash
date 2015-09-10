@@ -172,17 +172,17 @@ function public_ip {
 function local_ip {
     # Try to take the public IP using AWS EC2's metadata API:
     local ip=$(curl -s -L -m2 http://169.254.169.254/latest/meta-data/local-ipv4 || true)
-    
+
     # Try to use DigitalOcean's metadata API as fallback:
     if [[ "$ip" == "" || "$ip" == "not found" ]]; then
         ip=$(curl -s -L -m2 http://169.254.169.254/metadata/v1/interfaces/private/0/ipv4/address || true)
     fi
-    
+
     # Fallback to localhost as last alternative
     if [[ "$ip" == "" || "$ip" == "not found" ]]; then
         ip=127.0.0.1
     fi
-    
+
     echo "${ip}"
 }
 
@@ -212,10 +212,6 @@ function set_local_host {
     fi
     if [[ $private_ip == "" ]]; then
         private_ip=$(public_ip)
-    fi
-    if [[ $private_ip == "127.0.0.1" ]]; then
-        echo "Couldn't find suitable local_ip, please run with --host-ip <external ip>"
-        exit 1
     fi
 }
 
@@ -404,12 +400,11 @@ function config_tsuru_pre {
     sudo mkdir -p /etc/tsuru
     echo "$TSURU_CONF" | sudo tee /etc/tsuru/tsuru.conf > /dev/null
     sudo sed -i.old -e "s/{{{HOST_IP}}}/${host_ip}/g" /etc/tsuru/tsuru.conf
-    sudo sed -i.old -e "s/{{{PRIVATE_IP}}}/${dockerhost}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{REGISTRY_HOST}}}/${registryhost}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{HOST_NAME}}}/${host_name}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{MONGO_HOST}}}/${mongohost}/g" /etc/tsuru/tsuru.conf
     sudo sed -i.old -e "s/{{{MONGO_PORT}}}/${mongoport}/g" /etc/tsuru/tsuru.conf
-    if [[ -e /etc/default/tsuru-server ]]; then
+    if [[ -f /etc/default/tsuru-server ]]; then
         sudo sed -i.old -e 's/=no/=yes/' /etc/default/tsuru-server
     fi
 }
