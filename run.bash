@@ -337,7 +337,7 @@ function install_mongo {
 function install_vulcand {
     docker rm -f tsuru_etcd tsuru_vulcand || true
     docker run -d --restart=always -p 4001:4001 --name tsuru_etcd quay.io/coreos/etcd:v2.0.12 --listen-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001 --advertise-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001
-    docker run -d --net=host --restart=always --name tsuru_vulcand mailgun/vulcand:v0.8.0-beta.3 /go/bin/vulcand -apiInterface="0.0.0.0" -etcd=http://127.0.0.1:4001 -apiPort=8182 -apiInterface=127.0.0.1 -port=80
+    docker run -d --net=host --restart=always --name tsuru_vulcand mailgun/vulcand:v0.8.0-beta.3 /go/bin/vulcand -apiInterface="0.0.0.0" -etcd=http://127.0.0.1:4001 -apiPort=8182 -port=80
 }
 
 function install_gandalf {
