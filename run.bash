@@ -465,21 +465,6 @@ function install_platform {
     if [[ $has_plat == "" ]]; then
         tsuru-admin platform-add "$1" --dockerfile "$dockerfile"
     fi
-    local platform_ok=$(docker run --rm "${dockerhost}:5000/tsuru/$1" bash -c 'source /var/lib/tsuru/config && ${VENV_DIR}/bin/circusd --daemon /etc/circus/circus.ini && sleep 2 && ps aux | grep circusd | grep -v grep')
-    if [[ $platform_ok == "" ]]; then
-        # Circusd bugged version, rebuilding platform
-        tsuru-admin platform-update "$1" --dockerfile "$dockerfile"
-    fi
-    local platform_ok=$(docker run --rm "${dockerhost}:5000/tsuru/$1" bash -c 'source /var/lib/tsuru/config && ${VENV_DIR}/bin/circusd --daemon /etc/circus/circus.ini && sleep 2 && ps aux | grep circusd | grep -v grep')
-    if [[ $platform_ok == "" ]]; then
-        echo "Error trying to start circus inside $1 docker image. Please report this as a bug in https://github.com/tsuru/now/issues"
-        echo "Additional information:"
-        uname -a
-        docker version
-        echo "Tsuru hash: "
-        git --git-dir ~/go/src/github.com/tsuru/tsuru/.git log | head -n1
-        exit 1
-    fi
 }
 
 function install_dashboard {
