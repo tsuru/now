@@ -417,17 +417,12 @@ function config_tsuru_post {
 
 function create_initial_user {
     echo "Creating initial admin user..."
-    mongo tsurudb --eval 'db.teams.update({_id: "admin"}, {_id: "admin"}, {upsert: true})'
-    mongo tsurudb --eval "db.teams.update({_id: 'admin'}, {\$addToSet: {users: '${adminuser}'}})"
-    curl -sS -XPOST -d"{\"email\":\"${adminuser}\",\"password\":\"${adminpassword}\"}" "http://${private_ip}:8080/users"
+    yes $adminpassword | tsuru user-create $adminuser
+    yes $adminpassword | tsuru login $adminuser
+    tsuru team-create admin
 }
 
 function enable_initial_user {
-    echo "Retriving token and uploading public key for initial admin user..."
-    if [[ ! -e ~/.tsuru_token ]]; then
-        local token=$(curl -sS -XPOST -d"{\"password\":\"${adminpassword}\"}" "http://${private_ip}:8080/users/${adminuser}/tokens" | jq -r .token)
-        echo "${token}" > ~/.tsuru_token
-    fi
     mkdir -p ~/.ssh
     if ! grep -Pzo "Host ${private_ip}\s+StrictHostKeyChecking no" ~/.ssh/config >/dev/null; then
         echo -e "Host ${private_ip}\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
