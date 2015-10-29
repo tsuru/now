@@ -545,8 +545,7 @@ function install_archive_server_pkg {
 }
 
 function install_swift {
-    sudo apt-get install python-pip python-dev libxml2-dev libxslt-dev libz-dev -y
-    sudo pip install python-swiftclient python-keystoneclient
+    sudo apt-get install python-swiftclient
 }
 
 function install_s3cmd {
