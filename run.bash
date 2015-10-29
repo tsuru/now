@@ -545,7 +545,7 @@ function install_archive_server_pkg {
 }
 
 function install_swift {
-    sudo apt-get install python-swiftclient
+    sudo apt-get install python-swiftclient -y --force-yes
 }
 
 function install_s3cmd {
