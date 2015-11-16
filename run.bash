@@ -60,10 +60,10 @@ auth:
   user-registration: true
   scheme: native
 routers:
-  vulcand:
-    type: vulcand
-    api-url: http://127.0.0.1:8182
+  hipache:
+    type: hipache
     domain: {{{HOST_NAME}}}
+    redis-server: 127.0.0.1:6379
 repo-manager: gandalf
 provisioner: docker
 queue:
@@ -80,7 +80,7 @@ docker:
   collection: docker_containers
   registry: {{{REGISTRY_HOST}}}:$registryport
   repository-namespace: tsuru
-  router: vulcand
+  router: hipache
   deploy-cmd: /var/lib/tsuru/deploy
   segregate: true
   cluster:
@@ -334,10 +334,9 @@ function install_mongo {
     echo "mongodb found running at $mongohost:$mongoport"
 }
 
-function install_vulcand {
-    docker rm -f tsuru_etcd tsuru_vulcand || true
-    docker run -d --restart=always -p 4001:4001 --name tsuru_etcd quay.io/coreos/etcd:v2.0.12 --listen-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001 --advertise-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001
-    docker run -d --net=host --restart=always --name tsuru_vulcand mailgun/vulcand:v0.8.0-beta.3 /go/bin/vulcand -apiInterface="0.0.0.0" -etcd=http://127.0.0.1:4001 -apiPort=8182 -port=80
+function install_planb {
+    docker rm -f tsuru_planb || true
+    docker run -d --net=host --restart=always --name tsuru_planb tsuru/planb:v1 --listen ":80"
 }
 
 function install_gandalf {
@@ -631,7 +630,7 @@ function install_all {
         install_docker_registry
     fi
     install_mongo
-    install_vulcand
+    install_planb
     install_gandalf
     if [[ ${install_tsuru_source-} == "1" ]]; then
         config_tsuru_pre
@@ -688,7 +687,7 @@ function install_server {
         install_docker_registry
     fi
     install_mongo
-    install_vulcand
+    install_planb
     install_gandalf
     install_tsuru_pkg
     if [[ ${install_archive_server} == "1" ]]; then
@@ -801,7 +800,7 @@ Options:
  -t, --template [name]          Install template, name options:
                                 - all: install all packages (default)
                                 - dockerfarm: install docker only
-                                - server: install mongo, vulcand, gandalf, archiver, tsuru-server
+                                - server: install mongo, planb, gandalf, archiver, tsuru-server
                                   and their dependencies
                                 - client: install tsuru-admin, tsuru-client and their dependencies
  -v, --verbose                  Print debug messages
