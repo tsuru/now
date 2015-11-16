@@ -25,9 +25,9 @@ registryhost=""
 registryport="5000"
 adminuser="admin@example.com"
 adminpassword="admin123"
-install_archive_server=0
-hook_url=https://raw.github.com/tsuru/tsuru/master/misc/git-hooks/post-receive
-hook_name=post-receive
+install_archive_server=1
+hook_url=https://raw.github.com/tsuru/tsuru/master/misc/git-hooks/pre-receive.archive-server
+hook_name=pre-receive
 git_envs=(A=B)
 aws_access_key=""
 aws_secret_key=""
@@ -359,15 +359,6 @@ function install_gandalf {
         exit 1
     fi
     echo "gandalf found running at $gandalfaddr"
-    sudo cp /usr/share/doc/gandalf-server/examples/git-daemon.default.example /etc/default/git-daemon
-    sudo service git-daemon restart
-    sleep 5
-    local gitaddr=$(running_addr git-daemon)
-    if [[ $gitaddr == "" ]]; then
-        echo "Error: Couldn't find git-daemon addr, please check your logs"
-        exit 1
-    fi
-    echo "git-daemon found running at $gitaddr"
 }
 
 function install_go {
