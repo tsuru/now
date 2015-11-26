@@ -407,8 +407,12 @@ function config_tsuru_post {
 
 function create_initial_user {
     echo "Creating initial admin user..."
-    yes $adminpassword | tsuru user-create $adminuser
-    yes $adminpassword | tsuru login $adminuser
+    if [[ $tsuru_ppa_source == "nightly" ]]; then
+        yes $adminpassword | tsurud root-user-create $adminuser
+    else
+        yes $adminpassword | tsuru user-create $adminuser
+        yes $adminpassword | tsuru login $adminuser
+    fi
     tsuru team-create admin
 }
 
