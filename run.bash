@@ -411,8 +411,8 @@ function create_initial_user {
         yes $adminpassword | tsurud root-user-create $adminuser
     else
         yes $adminpassword | tsuru user-create $adminuser
-        yes $adminpassword | tsuru login $adminuser
     fi
+    yes $adminpassword | tsuru login $adminuser
     tsuru team-create admin
 }
 
