@@ -25,6 +25,7 @@ registryhost=""
 registryport="5000"
 adminuser="admin@example.com"
 adminpassword="admin123"
+install_tsuru_source=0
 install_archive_server=1
 hook_url=https://raw.github.com/tsuru/tsuru/master/misc/git-hooks/pre-receive.archive-server
 hook_name=pre-receive
