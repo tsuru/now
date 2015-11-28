@@ -363,7 +363,7 @@ function install_gandalf {
 }
 
 function install_go {
-    local version=$(go version 2>/dev/null | sed "s/go version[^0-9]*\([0-9.]*\).*/\1/")
+    local version=$(go version 2>/dev/null | sed -e 's/go version[^0-9]*\([0-9.]*\).*/\1/')
     local iversion=$(installed_version go 1.1.0 "${version}")
     if [[ $iversion != "" ]]; then
         echo "Skipping go installation, version installed: $iversion"
