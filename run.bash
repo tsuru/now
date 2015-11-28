@@ -408,7 +408,7 @@ function config_tsuru_post {
 
 function create_initial_user {
     echo "Creating initial admin user..."
-    if [[ $tsuru_ppa_source == "nightly" || $install_tsuru_source == "1" ]]; then
+    if [[ $install_tsuru_source == "1" || $tsuru_ppa_source == "nightly" ]]; then
         yes $adminpassword | tsurud root-user-create $adminuser
     else
         yes $adminpassword | tsuru user-create $adminuser
