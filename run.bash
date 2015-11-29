@@ -179,6 +179,10 @@ function local_ip {
         ip=$(curl -s -L -m2 http://169.254.169.254/metadata/v1/interfaces/private/0/ipv4/address || true)
     fi
 
+    if [[ "$ip" == "not found" ]]; then
+        ip=""
+    fi
+
     echo "${ip}"
 }
 
