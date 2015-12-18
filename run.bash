@@ -80,6 +80,7 @@ docker:
     reporter-interval: 10
     socket: /var/run/docker.sock
   collection: docker_containers
+  port-allocator: tsuru
   registry: {{{REGISTRY_HOST}}}:$registryport
   repository-namespace: tsuru
   router: hipache
