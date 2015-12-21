@@ -430,7 +430,7 @@ function enable_initial_user {
     if [[ ! -e ~/.ssh/id_rsa ]]; then
         yes | ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa > /dev/null
     fi
-    tsuru key-add rsa ~/.ssh/id_rsa.pub || true
+    tsuru key-add -f rsa ~/.ssh/id_rsa.pub || true
 }
 
 function add_as_docker_node {
