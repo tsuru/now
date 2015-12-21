@@ -416,7 +416,7 @@ function create_initial_user {
     echo "Creating initial admin user..."
     yes $adminpassword | tsurud root-user-create $adminuser || true
     yes $adminpassword | tsuru login $adminuser
-    tsuru team-create admin
+    tsuru team-create admin || true
 }
 
 function enable_initial_user {
