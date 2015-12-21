@@ -463,7 +463,7 @@ function install_dashboard {
     echo "Installing tsuru-dashboard..."
     tsuru app-create tsuru-dashboard python -o theonepool -t admin || true
     pushd ~/
-    if [[ ! -e ~/tsuru-dashboard/app.yaml ]]; then
+    if [[ ! -d ~/tsuru-dashboard ]]; then
         git clone https://github.com/tsuru/tsuru-dashboard
     fi
     pushd tsuru-dashboard
