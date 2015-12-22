@@ -433,6 +433,17 @@ function enable_initial_user {
     tsuru key-add -f rsa ~/.ssh/id_rsa.pub || true
 }
 
+function add_default_roles {
+    tsuru role-add team-create global || true
+    tsuru role-permission-add team-create role.update team.create || true
+
+    tsuru role-add team-member team
+    tsuru role-permission-add team-member app service-instance team
+
+    tsuru role-default-add --team-create team-member
+    tsuru role-default-add --user-create team-create
+}
+
 function add_as_docker_node {
     echo "Adding docker node to pool..."
     tsuru-admin pool-add $pool -p -d 2>/dev/null || tsuru-admin pool-add $pool 2>/dev/null || true
@@ -649,6 +660,7 @@ function install_all {
     add_git_envs
     create_initial_user
     enable_initial_user
+    add_default_roles
     add_as_docker_node
     install_platform python
     if [[ ${without_dashboard-} != "1" ]]; then
@@ -700,6 +712,7 @@ function install_server {
     add_git_envs
     create_initial_user
     enable_initial_user
+    add_default_roles
     add_as_docker_node
     install_platform python
 
@@ -724,6 +737,7 @@ function install_client {
     fi
     config_tsuru_post
     enable_initial_user
+    add_default_roles
     if [[ ${without_dashboard-} != "1" ]]; then
         install_dashboard
     fi
@@ -762,6 +776,7 @@ function install_dockerfarm {
     install_tsuru_client
     config_tsuru_post
     enable_initial_user
+    add_default_roles
     add_as_docker_node
 }
 
