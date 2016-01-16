@@ -375,21 +375,21 @@ function install_go {
         echo "Skipping go installation, version installed: $iversion"
     else
         echo "Installing go..."
-        sudo apt-add-repository ppa:tsuru/golang -y
+        sudo apt-add-repository ppa:ubuntu-lxc/lxd-stable -y
         sudo apt-get update
         sudo apt-get install golang -y
     fi
     if [[ ${GOPATH-} == "" ]]; then
         export GOPATH=$HOME/go
     fi
+    export GO15VENDOREXPERIMENT=1
     mkdir -p $GOPATH
     local bash_gopath=$(bash -ic 'source ~/.bashrc && echo $GOPATH')
     if [[ $bash_gopath != $GOPATH ]]; then
         echo "Adding GOPATH=$GOPATH to ~/.bashrc"
         echo -e "export GOPATH=$GOPATH" | tee -a ~/.bashrc > /dev/null
+        echo -e "export GO15VENDOREXPERIMENT=1" | tee -a ~/.bashrc > /dev/null
     fi
-    go get github.com/tools/godep
-    sudo cp $(echo "${GOPATH}" | awk -F ':' '{print $1}')/bin/godep /usr/local/bin
 }
 
 function config_tsuru_pre {
@@ -508,13 +508,11 @@ function install_tsuru_src {
     if [[ -e ${GOPATH}/src/github.com/tsuru/tsuru ]]; then
         pushd "${GOPATH}/src/github.com/tsuru/tsuru"
         git reset --hard && git clean -dfx && git pull
-        godep restore
         popd
     else
         mkdir -p "${GOPATH}/src/github.com/tsuru/tsuru"
         pushd "${GOPATH}/src/github.com/tsuru/tsuru"
         git clone https://github.com/tsuru/tsuru .
-        godep restore
         popd
     fi
     go get github.com/tsuru/tsuru/cmd/tsurud
