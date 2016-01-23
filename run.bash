@@ -317,28 +317,8 @@ function install_docker_registry {
 }
 
 function install_mongo {
-    sudo service mongod stop 1>&2 2>/dev/null || true
-    sudo service mongodb stop 1>&2 2>/dev/null || true
-    sudo apt-get remove --purge mongodb-10gen mongodb-org -y 1>&2 2> /dev/null || true
-    local version=$(mongod --version 2>/dev/null | grep "db version" | sed s/^.*v//)
-    local iversion=$(installed_version mongo 2.4.0 "${version}")
-    if [[ $iversion != "" ]]; then
-        echo "Skipping mongod installation, version installed: ${iversion}"
-    else
-        echo "Installing mongodb..."
-        sudo apt-get install mongodb -y
-        sudo sed -i 's/^journal=true//' /etc/mongodb.conf
-        echo "nojournal = true" | sudo tee -a /etc/mongodb.conf > /dev/null
-    fi
-    sudo service mongodb stop 1>&2 2>/dev/null || true
-    sudo service mongodb start
-    sleep 5
-    mongoport=$(running_port mongod)
-    if [[ $mongoport == "" ]]; then
-        echo "Error: Couldn't find mongod port, please check /var/log/mongodb/mongod.log for more information"
-        exit 1
-    fi
-    echo "mongodb found running at $mongohost:$mongoport"
+    docker rm -f mongodb || true
+    docker run -d -p 27017:27017 --net=host --restart=always --name mongodb mongo
 }
 
 function install_planb {
