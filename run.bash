@@ -253,7 +253,7 @@ function install_basic_deps {
     fi
     sudo apt-get update
     sudo apt-get install linux-image-extra-$(uname -r) -qqy
-    sudo apt-get install jq screen curl mercurial git bzr redis-server \
+    sudo apt-get install jq screen curl mercurial git bzr \
                          software-properties-common apt-transport-https -y
     if [[ $ext_repository ]]; then
         curl -sS ${ext_repository}/public.key | sudo apt-key add -
@@ -319,6 +319,11 @@ function install_docker_registry {
 function install_mongo {
     docker rm -f mongodb || true
     docker run -d -p 27017:27017 --net=host --restart=always --name mongodb mongo
+}
+
+function install_redis {
+    docker rm -f redis || true
+    docker run -d -p 6379:6379 --net=host --restart=always --name redis redis
 }
 
 function install_planb {
@@ -616,6 +621,7 @@ function install_all {
     if [[ "${registryhost}" == "${dockerhost}" ]]; then
         install_docker_registry
     fi
+    install_redis
     install_mongo
     install_planb
     install_gandalf
@@ -674,6 +680,7 @@ function install_server {
     if [[ "${registryhost}" == "${dockerhost}" ]]; then
         install_docker_registry
     fi
+    install_redis
     install_mongo
     install_planb
     install_gandalf
