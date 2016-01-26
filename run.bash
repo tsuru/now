@@ -377,6 +377,11 @@ function install_go {
     fi
 }
 
+function install_test_deps {
+  echo "Installing test dependencies..."
+  sudo apt-get -y install xmlsec1 libsasl2-dev
+}
+
 function config_tsuru_pre {
     sudo mkdir -p /etc/tsuru
     echo "$TSURU_CONF" | sudo tee /etc/tsuru/tsuru.conf > /dev/null
@@ -629,6 +634,7 @@ function install_all {
         config_tsuru_pre
         install_go
         install_tsuru_src
+        install_test_deps
     else
         install_tsuru_pkg
     fi
