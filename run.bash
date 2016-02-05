@@ -230,7 +230,7 @@ function check_support {
     distid=$(lsb_release -is)
     release=$(lsb_release -rs)
     codename=$(lsb_release -cs)
-    if [[ $distid == "Debian" && $release -lt 7 ]]; then
+    if [[ $distid == "Debian" && $(echo $release | awk '{printf("%d", $1)}') -lt 7  ]]; then
         error "Error: This script requires Debian release >= 7"
     fi
     echo "Detect ${distid} ${release} (${codename}), supported system"
