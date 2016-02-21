@@ -323,7 +323,7 @@ function install_mongo {
 
 function install_redis {
     docker rm -f redis || true
-    docker run -d -p 6379:6379 --net=host --restart=always --name redis redis
+    docker run -d -p 6379:6379 --restart=always --name redis redis
 }
 
 function install_planb {
