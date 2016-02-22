@@ -71,9 +71,9 @@ provisioner: docker
 queue:
   mongo-url: {{{MONGO_HOST}}}:{{{MONGO_PORT}}}
   mongo-database: tsuru_queue
-redis-queue:
-  host: localhost
-  port: 6379
+pubsub:
+  redis-host: 127.0.0.1
+  redis-port: 6379
 docker:
   bs:
     image: tsuru/bs
@@ -85,7 +85,6 @@ docker:
   repository-namespace: tsuru
   router: hipache
   deploy-cmd: /var/lib/tsuru/deploy
-  segregate: true
   cluster:
     storage: mongodb
     mongo-url: {{{MONGO_HOST}}}:{{{MONGO_PORT}}}
