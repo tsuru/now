@@ -76,7 +76,7 @@ pubsub:
   redis-port: 6379
 docker:
   bs:
-    image: tsuru/bs
+    image: tsuru/bs:v1
     reporter-interval: 10
     socket: /var/run/docker.sock
   collection: docker_containers
