@@ -453,8 +453,8 @@ function add_as_docker_node {
 function install_platform {
     echo "Installing platform container..."
     local has_plat=$((tsuru platform-list | grep "${1}"$) || true)
-    if [[ $has_plat == "" ]]; then
-        tsuru-admin platform-add -i "tsuru/$1"
+    if [[ ${has_plat} == "" ]]; then
+        tsuru-admin platform-add ${1} -i "tsuru/${1}"
     fi
 }
 
