@@ -453,9 +453,8 @@ function add_as_docker_node {
 function install_platform {
     echo "Installing platform container..."
     local has_plat=$((tsuru platform-list | grep "${1}"$) || true)
-    local dockerfile="https://raw.githubusercontent.com/tsuru/basebuilder/master/$1/Dockerfile"
     if [[ $has_plat == "" ]]; then
-        tsuru-admin platform-add "$1" --dockerfile "$dockerfile"
+        tsuru-admin platform-add -i "tsuru/$1"
     fi
 }
 
