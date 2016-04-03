@@ -366,13 +366,11 @@ function install_go {
     if [[ ${GOPATH-} == "" ]]; then
         export GOPATH=$HOME/go
     fi
-    export GO15VENDOREXPERIMENT=1
     mkdir -p $GOPATH
     local bash_gopath=$(bash -ic 'unset GOPATH; source ~/.bashrc && echo $GOPATH')
     if [[ $bash_gopath != $GOPATH ]]; then
         echo "Adding GOPATH=$GOPATH to ~/.bashrc"
         echo -e "export GOPATH=$GOPATH" | tee -a ~/.bashrc > /dev/null
-        echo -e "export GO15VENDOREXPERIMENT=1" | tee -a ~/.bashrc > /dev/null
     fi
 }
 
