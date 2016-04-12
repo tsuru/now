@@ -458,7 +458,7 @@ function install_platform {
 
 function install_dashboard {
     echo "Installing tsuru-dashboard..."
-    tsuru app-create tsuru-dashboard python -o theonepool -t admin || true
+    tsuru app-create tsuru-dashboard python -o $pool -t admin || true
     pushd ~/
     if [[ ! -d ~/tsuru-dashboard ]]; then
         git clone https://github.com/tsuru/tsuru-dashboard
