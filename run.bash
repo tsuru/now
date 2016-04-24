@@ -464,14 +464,16 @@ function install_dashboard {
         git clone https://github.com/tsuru/tsuru-dashboard
     fi
     pushd tsuru-dashboard
+    git remote add tsuru "git@${private_ip}:tsuru-dashboard.git" || true
     git reset --hard
     git clean -dfx
     git pull
     if [[ ${install_tsuru_source-} == "1" || $tsuru_ppa_source == "nightly" ]]; then
       git checkout tsuru1.0
+      git push tsuru tsuru1.0:master
+    else
+      git push tsuru master
     fi
-    git remote add tsuru "git@${private_ip}:tsuru-dashboard.git" || true
-    git push tsuru master
     popd
     popd
 }
