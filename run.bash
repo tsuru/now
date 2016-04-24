@@ -467,6 +467,9 @@ function install_dashboard {
     git reset --hard
     git clean -dfx
     git pull
+    if [[ ${install_tsuru_source-} == "1" || $tsuru_ppa_source == "nightly" ]]; then
+      git checkout tsuru1.0
+    fi
     git remote add tsuru "git@${private_ip}:tsuru-dashboard.git" || true
     git push tsuru master
     popd
