@@ -1,6 +1,6 @@
 #!/bin/bash -ue
 
-# Copyright 2015 tsuru-now authors. All rights reserved.
+# Copyright 2016 tsuru-now authors. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
@@ -468,12 +468,7 @@ function install_dashboard {
     git reset --hard
     git clean -dfx
     git pull
-    if [[ ${install_tsuru_source-} == "1" || $tsuru_ppa_source == "nightly" ]]; then
-      git checkout tsuru1.0
-      git push tsuru tsuru1.0:master
-    else
-      git push tsuru master
-    fi
+    git push tsuru master
     popd
     popd
 }
