@@ -804,7 +804,7 @@ Options:
                                   and their dependencies
                                 - client: install tsuru-admin, tsuru-client and their dependencies
  -v, --verbose                  Print debug messages
- -P, --docker-pool [name]       Add docker to distination pool of tsuru (default: theonepool)
+ -P, --docker-pool [name]       Add docker to destination pool of tsuru (default: theonepool)
 
  -h, --help                     This help screen
 "
