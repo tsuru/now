@@ -424,11 +424,11 @@ function add_default_roles {
     tsuru role-add team-create global || true
     tsuru role-permission-add team-create role.update team.create || true
 
-    tsuru role-add team-member team
-    tsuru role-permission-add team-member app service-instance team
+    tsuru role-add team-member team  || true
+    tsuru role-permission-add team-member app service-instance team  || true
 
-    tsuru role-default-add --team-create team-member
-    tsuru role-default-add --user-create team-create
+    tsuru role-default-add --team-create team-member  || true
+    tsuru role-default-add --user-create team-create  || true
 }
 
 function add_as_docker_node {
@@ -805,7 +805,7 @@ Options:
                                 - client: install tsuru-admin, tsuru-client and their dependencies
  -v, --verbose                  Print debug messages
  -P, --docker-pool [name]       Add docker to destination pool of tsuru (default: theonepool)
-
+ -R, --registryhost             Set the docker registry IP
  -h, --help                     This help screen
 "
 }
