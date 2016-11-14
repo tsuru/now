@@ -777,36 +777,37 @@ function show_help {
 
 Options:
 
- -n, --host-name [name]         Set the VM's hostname
- -i, --host-ip [name]           Set the VM's IP
- -c, --tsuru-from-source        Install tsuru from master source code (default: stable packages)
- -p, --tsuru-pkg-stable         Install tsuru from stable packages
- -N, --tsuru-pkg-nightly        Install tsuru from nightly build packages (default: stable packages)
- -f, --force-install [pkg]      Force installation of named package
- -g, --gopath [path]            prepend new path to env var GOPATH
- -a, --archive-server           Install the archive server
- -u, --hook-url [url]           Git hook URL
- -o, --hook-name [name]         Git hook name
- -e, --env [key] [value]        Set environment variable for git user in the VM
- -k, --aws-access-key [key]     Set the AWS access key
- -s, --aws-secret-key [key]     Set the AWS secret key
- -r, --ext-repository [repo]    Set the external repository URL produced by tsuru/tsuru-deb
- -d, --docker-only              Only install docker          (default: docker, dashboard)
- -w, --without-dashboard        Install without dashboard    (default: with dashboard)
- -I, --set-interface            The IP provided by --host-ip is not really allocated to this VM,
-                                use ifconfig to set up an interface so it can be reached
- -D, --docker-node [node1] [node2] ...
-                                Add extra docker nodes to tsuru server for building clusters
- -t, --template [name]          Install template, name options:
-                                - all: install all packages (default)
-                                - dockerfarm: install docker only
-                                - server: install mongo, planb, gandalf, archiver, tsuru-server
-                                  and their dependencies
-                                - client: install tsuru-admin, tsuru-client and their dependencies
- -v, --verbose                  Print debug messages
- -P, --docker-pool [name]       Add docker to destination pool of tsuru (default: theonepool)
- -R, --registryhost             Set the docker registry IP
- -h, --help                     This help screen
+ -n,  --host-name [name]         Set the VM's hostname
+ -i,  --host-ip [name]           Set the VM's IP
+ -pi, --private-ip [name]        Set the VM's private IP
+ -c,  --tsuru-from-source        Install tsuru from master source code (default: stable packages)
+ -p,  --tsuru-pkg-stable         Install tsuru from stable packages
+ -N,  --tsuru-pkg-nightly        Install tsuru from nightly build packages (default: stable packages)
+ -f,  --force-install [pkg]      Force installation of named package
+ -g,  --gopath [path]            prepend new path to env var GOPATH
+ -a,  --archive-server           Install the archive server
+ -u,  --hook-url [url]           Git hook URL
+ -o,  --hook-name [name]         Git hook name
+ -e,  --env [key] [value]        Set environment variable for git user in the VM
+ -k,  --aws-access-key [key]     Set the AWS access key
+ -s,  --aws-secret-key [key]     Set the AWS secret key
+ -r,  --ext-repository [repo]    Set the external repository URL produced by tsuru/tsuru-deb
+ -d,  --docker-only              Only install docker          (default: docker, dashboard)
+ -w,  --without-dashboard        Install without dashboard    (default: with dashboard)
+ -I,  --set-interface            The IP provided by --host-ip is not really allocated to this VM,
+                                 use ifconfig to set up an interface so it can be reached
+ -D,  --docker-node [node1] [node2] ...
+                                 Add extra docker nodes to tsuru server for building clusters
+ -t,  --template [name]          Install template, name options:
+                                 - all: install all packages (default)
+                                 - dockerfarm: install docker only
+                                 - server: install mongo, planb, gandalf, archiver, tsuru-server
+                                   and their dependencies
+                                 - client: install tsuru-admin, tsuru-client and their dependencies
+ -v,  --verbose                  Print debug messages
+ -P,  --docker-pool [name]       Add docker to destination pool of tsuru (default: theonepool)
+ -R,  --registryhost             Set the docker registry IP
+ -h,  --help                     This help screen
 "
 }
 
@@ -841,6 +842,10 @@ while [ "${1-}" != "" ]; do
         "-i" | "--host-ip")
             shift
             host_ip=$1
+            ;;
+        "-pi" | "--private-ip")
+            shift
+            private_ip=$1
             ;;
         "-c" | "--tsuru-from-source")
             install_tsuru_source=1
