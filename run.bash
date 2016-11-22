@@ -238,7 +238,7 @@ function check_support {
 function install_basic_deps {
     local tsuru_ppa_source=$1
     echo "Updating apt-get and installing basic dependencies (this could take a while)..."
-    if [[ $distid == "Debian" && $release -gt 7 && $release -lt 8 ]]; then
+    if [[ $distid == "Debian" && $release > 7 && $release < 8 ]]; then
         if ! apt-cache policy | grep "l=Debian Backports" > /dev/null; then
             echo 'deb http://http.debian.net/debian wheezy-backports main contrib non-free' | sudo tee /etc/apt/sources.list.d/backports.list
         fi
