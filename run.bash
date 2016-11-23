@@ -249,9 +249,9 @@ function install_basic_deps {
     fi
     if [[ $distid == "Ubuntu" ]]; then
         sudo perl -i -pe 's/^# *(.+)(trusty|trusty-updates|trusty-security) multiverse$/$1$2 multiverse/gi' /etc/apt/sources.list
+        sudo apt-get update
+        sudo apt-get install linux-image-extra-$(uname -r) -qqy
     fi
-    sudo apt-get update
-    sudo apt-get install linux-image-extra-$(uname -r) -qqy
     sudo apt-get install jq screen curl mercurial git bzr \
                          software-properties-common apt-transport-https -y
     if [[ $ext_repository ]]; then
@@ -275,7 +275,7 @@ function install_docker {
     if [[ ${registryhost} == "" ]]; then
         registryhost=${dockerhost}
     fi
-    local version=$(docker version 2>/dev/null | grep "Client version" | cut -d" " -f3)
+    local version=$(docker -v | awk -F '[ ,]+' '{ print $3 }')
     local iversion=$(installed_version docker 0.20.0 "${version}")
     if [[ $iversion != "" ]]; then
         echo "Skipping docker installation, version installed: $iversion"
