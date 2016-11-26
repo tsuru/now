@@ -34,7 +34,6 @@ git_envs=(A=B)
 aws_access_key=""
 aws_secret_key=""
 ext_repository=""
-sysinit="upstart"
 export DEBIAN_FRONTEND=noninteractive
 
 declare -A DISTMAP=(
@@ -284,17 +283,16 @@ function install_docker {
         echo "Installing docker..."
         curl -sSL https://get.docker.com/ | sudo sh
     fi
-    if [[ $sysinit == "upstart" ]]; then
+    if [[ `systemctl is-system-running` =~ running ]]; then
+        sudo -E sh -c "mkdir -p /etc/systemd/system/docker.service.d"
+        sudo -E sh -c "echo '[Service]\nExecStart=\nExecStart=/usr/bin/dockerd \$DOCKER_OPTS -H tcp://0.0.0.0:${dockerport} -H unix:///var/run/docker.sock --insecure-registry=${registryhost}:${registryport}' > /etc/systemd/system/docker.service.d/tsuru.conf"
+        sudo systemctl daemon-reload
+    else
         local opts=$(bash -c 'source /etc/default/docker && echo $DOCKER_OPTS')
         if [[ ! $opts =~ :// ]]; then
             echo "Changing /etc/default/docker to listen on tcp://0.0.0.0:${dockerport}..."
             echo "DOCKER_OPTS=\"\$DOCKER_OPTS -H tcp://0.0.0.0:${dockerport} -H unix:///var/run/docker.sock --insecure-registry=${registryhost}:${registryport}\"" | sudo tee -a /etc/default/docker > /dev/null
         fi
-    fi
-    if [[ $sysinit == "systemd" ]]; then
-        sudo -E sh -c "mkdir -p /etc/systemd/system/docker.service.d"
-        sudo -E sh -c "echo '[Service]\nExecStart=\nExecStart=/usr/bin/dockerd \$DOCKER_OPTS -H tcp://0.0.0.0:${dockerport} -H unix:///var/run/docker.sock --insecure-registry=${registryhost}:${registryport}' > /etc/systemd/system/docker.service.d/tsuru.conf"
-        sudo systemctl daemon-reload
     fi
     sudo service docker stop 1>&2 2>/dev/null || true
     sudo service docker start
@@ -917,9 +915,6 @@ while [ "${1-}" != "" ]; do
         "-R" | "--registryhost")
             shift
             registryhost=$1
-            ;;
-        "-sd" | "--systemd")
-            sysinit=systemd
             ;;
         * | "-h" | "--help")
             show_help
