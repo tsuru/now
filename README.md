@@ -39,7 +39,7 @@ curl -sL https://raw.githubusercontent.com/tsuru/now/master/run.bash | bash -s -
 Assume the IP address of the cluster server is 10.42.42.1
 
 ```
-curl -sL https://raw.githubusercontent.com/tsuru/now/master/run.bash | bash -s -- --template client --host-ip 10.42.42.1
+curl -sL https://raw.githubusercontent.com/tsuru/now/master/run.bash | bash -s -- --template client --private-ip 10.42.42.1
 ```
 
 
@@ -48,5 +48,5 @@ curl -sL https://raw.githubusercontent.com/tsuru/now/master/run.bash | bash -s -
 Assume the IP address of the cluster server is 10.42.42.1
 
 ```
-curl -sL https://raw.githubusercontent.com/tsuru/now/master/run.bash | bash -s -- --template dockerfarm --host-ip 10.42.42.1
+curl -sL https://raw.githubusercontent.com/tsuru/now/master/run.bash | bash -s -- --template dockerfarm --private-ip 10.42.42.1
 ```
