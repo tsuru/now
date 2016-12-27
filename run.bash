@@ -285,13 +285,13 @@ function install_docker {
     fi
     if [[ `systemctl is-system-running` =~ running ]]; then
         sudo -E sh -c "mkdir -p /etc/systemd/system/docker.service.d"
-        sudo -E sh -c "echo '[Service]\nExecStart=\nExecStart=/usr/bin/dockerd \$DOCKER_OPTS -H tcp://0.0.0.0:${dockerport} -H unix:///var/run/docker.sock --insecure-registry=${registryhost}:${registryport}' > /etc/systemd/system/docker.service.d/tsuru.conf"
+        sudo -E sh -c "echo '[Service]\nExecStart=\nExecStart=/usr/bin/dockerd \$DOCKER_OPTS -H tcp://127.0.0.1:${dockerport} -H unix:///var/run/docker.sock --insecure-registry=${registryhost}:${registryport}' > /etc/systemd/system/docker.service.d/tsuru.conf"
         sudo systemctl daemon-reload
     else
         local opts=$(bash -c 'source /etc/default/docker && echo $DOCKER_OPTS')
         if [[ ! $opts =~ :// ]]; then
-            echo "Changing /etc/default/docker to listen on tcp://0.0.0.0:${dockerport}..."
-            echo "DOCKER_OPTS=\"\$DOCKER_OPTS -H tcp://0.0.0.0:${dockerport} -H unix:///var/run/docker.sock --insecure-registry=${registryhost}:${registryport}\"" | sudo tee -a /etc/default/docker > /dev/null
+            echo "Changing /etc/default/docker to listen on tcp://127.0.0.1:${dockerport}..."
+            echo "DOCKER_OPTS=\"\$DOCKER_OPTS -H tcp://127.0.0.1:${dockerport} -H unix:///var/run/docker.sock --insecure-registry=${registryhost}:${registryport}\"" | sudo tee -a /etc/default/docker > /dev/null
         fi
     fi
     sudo service docker stop 1>&2 2>/dev/null || true
