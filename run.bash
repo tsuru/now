@@ -15,6 +15,7 @@ set_interface=""
 is_debug=""
 docker_node=""
 set_interface=""
+tsuru_admin="tsuru-admin"
 install_func=install_all
 pool="theonepool"
 mongohost="127.0.0.1"
@@ -220,6 +221,13 @@ function set_local_host {
     fi
 }
 
+function check_tsuru_admin {
+    tsuru-admin pool-add > /dev/null
+    if [ $? -ne 0 ]; then
+      tsuru_admin="tsuru"
+    fi
+}
+
 function check_support {
     which apt-get > /dev/null
     if [ $? -ne 0 ]; then
@@ -400,9 +408,9 @@ function config_tsuru_pre {
 }
 
 function config_tsuru_post {
-    tsuru-admin target-remove default
-    tsuru-admin target-add default "${private_ip}:8080" || true
-    tsuru-admin target-set default
+    $tsuru_admin target-remove default
+    $tsuru_admin target-add default "${private_ip}:8080" || true
+    $tsuru_admin target-set default
 }
 
 function create_initial_user {
@@ -439,16 +447,16 @@ function add_default_roles {
 
 function add_as_docker_node {
     echo "Adding docker node to pool..."
-    tsuru-admin pool-add $pool -p -d 2>/dev/null || tsuru-admin pool-add $pool 2>/dev/null || true
+    $tsuru_admin pool-add $pool -p -d 2>/dev/null || $tsuru_admin pool-add $pool 2>/dev/null || true
     amount=0
     for node in $docker_node; do
-        tsuru-admin docker-node-add --register address="http://${node}" pool=$pool 2>/dev/null || true
+        $tsuru_admin docker-node-add --register address="http://${node}" pool=$pool 2>/dev/null || true
         amount=$((amount+1))
     done
     set +e
     status=1
     while [ $status != 0 ]; do
-        tsuru-admin docker-node-list | grep "| http://" | grep ready | wc -l | grep -q "${amount}$"
+        $tsuru_admin docker-node-list | grep "| http://" | grep ready | wc -l | grep -q "${amount}$"
         status=$?
     done
     set -e
@@ -458,7 +466,7 @@ function install_platform {
     echo "Installing platform container..."
     local has_plat=$((tsuru platform-list | grep "${1}"$) || true)
     if [[ ${has_plat} == "" ]]; then
-        tsuru-admin platform-add ${1} -i "tsuru/${1}"
+        $tsuru_admin platform-add ${1} -i "tsuru/${1}"
     fi
 }
 
@@ -640,6 +648,7 @@ function install_all {
     else
         install_tsuru_pkg
     fi
+    check_tsuru_admin
     if [[ ${install_archive_server} == "1" ]]; then
         install_archive_server_pkg
     fi
