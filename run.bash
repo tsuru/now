@@ -458,7 +458,7 @@ function add_as_docker_node {
     set +e
     status=1
     while [ $status != 0 ]; do
-        $tsuru_admin docker-node-list | grep "| http://" | grep ready | wc -l | grep -q "${amount}$"
+        $tsuru_admin node-list | grep "| http://" | grep ready | wc -l | grep -q "${amount}$"
         status=$?
     done
     set -e
