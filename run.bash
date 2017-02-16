@@ -222,10 +222,12 @@ function set_local_host {
 }
 
 function check_tsuru_admin {
+    set +e
     tsuru-admin pool-add > /dev/null
     if [ $? -ne 0 ]; then
       tsuru_admin="tsuru"
     fi
+    set -e
 }
 
 function check_support {
