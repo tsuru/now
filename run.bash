@@ -29,7 +29,7 @@ adminpassword="admin123"
 install_tsuru_source=0
 tsuru_ppa_source="stable"
 install_archive_server=1
-hook_url=https://raw.github.com/tsuru/tsuru/master/misc/git-hooks/pre-receive.archive-server
+hook_url=https://raw.githubusercontent.com/tsuru/tsuru/master/misc/git-hooks/pre-receive
 hook_name=pre-receive
 git_envs=(A=B)
 aws_access_key=""
