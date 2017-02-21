@@ -28,12 +28,9 @@ adminuser="admin@example.com"
 adminpassword="admin123"
 install_tsuru_source=0
 tsuru_ppa_source="stable"
-install_archive_server=1
 hook_url=https://raw.githubusercontent.com/tsuru/tsuru/master/misc/git-hooks/pre-receive
 hook_name=pre-receive
 git_envs=(A=B)
-aws_access_key=""
-aws_secret_key=""
 ext_repository=""
 export DEBIAN_FRONTEND=noninteractive
 
@@ -536,77 +533,6 @@ function install_tsuru_src {
     echo "tsurud api found running at $tsurudaddr"
 }
 
-function install_archive_server_pkg {
-    sudo apt-get install archive-server -y
-
-    sudo service archive-server stop || true
-
-    local archive_server_read=$(bash -ic 'source ~git/.bash_profile && echo $ARCHIVE_SERVER_READ')
-    if [[ $archive_server_read != "http://${private_ip}:6161" ]]; then
-        echo "Adding archive server environment to ~git/.bash_profile"
-        echo "export ARCHIVE_SERVER_READ=http://${private_ip}:6060" | sudo tee -a ~git/.bash_profile > /dev/null
-        echo "export ARCHIVE_SERVER_WRITE=http://127.0.0.1:6161" | sudo tee -a ~git/.bash_profile > /dev/null
-    fi
-
-    echo 'export ARCHIVE_SERVER_OPTS="-dir=/var/lib/archive-server/archives -read-http=0.0.0.0:6060 -write-http=127.0.0.1:6161"' | sudo tee -a /etc/default/archive-server > /dev/null 2>&1
-    sudo service archive-server start
-}
-
-function install_swift {
-    sudo apt-get install python-swiftclient -y --force-yes
-}
-
-function install_s3cmd {
-    sudo apt-get install s3cmd python-magic -y
-    cat > /tmp/s3cfg <<END
-[default]
-access_key = ${aws_access_key}
-bucket_location = US
-cloudfront_host = cloudfront.amazonaws.com
-default_mime_type = binary/octet-stream
-delete_removed = False
-dry_run = False
-enable_multipart = True
-encoding = ANSI_X3.4-1968
-encrypt = False
-follow_symlinks = False
-force = False
-get_continue = False
-gpg_command = /usr/bin/gpg
-gpg_decrypt = %(gpg_command)s -d --verbose --no-use-agent --batch --yes --passphrase-fd %(passphrase_fd)s -o %(output_file)s %(input_file)s
-gpg_encrypt = %(gpg_command)s -c --verbose --no-use-agent --batch --yes --passphrase-fd %(passphrase_fd)s -o %(output_file)s %(input_file)s
-gpg_passphrase =
-guess_mime_type = True
-host_base = s3.amazonaws.com
-host_bucket = %(bucket)s.s3.amazonaws.com
-human_readable_sizes = False
-invalidate_on_cf = False
-list_md5 = False
-log_target_prefix =
-mime_type =
-multipart_chunk_size_mb = 15
-preserve_attrs = True
-progress_meter = True
-proxy_host =
-proxy_port = 0
-recursive = False
-recv_chunk = 4096
-reduced_redundancy = False
-secret_key = ${aws_secret_key}
-send_chunk = 4096
-simpledb_host = sdb.amazonaws.com
-skip_existing = False
-socket_timeout = 300
-urlencoding_mode = normal
-use_https = True
-verbosity = WARNING
-website_endpoint = http://%(bucket)s.s3-website-%(location)s.amazonaws.com/
-website_error =
-website_index = index.html
-END
-    sudo mv /tmp/s3cfg ~git/.s3cfg
-}
-
 function config_git_key {
     local tsuru_token=$(bash -ic 'source ~git/.bash_profile && echo $TSURU_TOKEN')
     if [[ $tsuru_token == "" ]]; then
@@ -651,13 +577,6 @@ function install_all {
         install_tsuru_pkg
     fi
     check_tsuru_admin
-    if [[ ${install_archive_server} == "1" ]]; then
-        install_archive_server_pkg
-    fi
-    install_swift
-    if [[ ${aws_access_key} != "" && ${aws_secret_key} != "" ]]; then
-        install_s3cmd
-    fi
     config_tsuru_post
     config_git_key
     add_git_envs
@@ -704,13 +623,6 @@ function install_server {
     install_planb
     install_gandalf
     install_tsuru_pkg
-    if [[ ${install_archive_server} == "1" ]]; then
-        install_archive_server_pkg
-    fi
-    install_swift
-    if [[ ${aws_access_key} != "" && ${aws_secret_key} != "" ]]; then
-        install_s3cmd
-    fi
     config_tsuru_post
     config_git_key
     add_git_envs
@@ -735,10 +647,6 @@ function install_client {
     set_local_host
     set_host
     install_tsuru_client
-    install_swift
-    if [[ ${aws_access_key} != "" && ${aws_secret_key} != "" ]]; then
-        install_s3cmd
-    fi
     config_tsuru_post
     enable_initial_user
     add_default_roles
@@ -802,12 +710,9 @@ Options:
  -N,  --tsuru-pkg-nightly        Install tsuru from nightly build packages (default: stable packages)
  -f,  --force-install [pkg]      Force installation of named package
  -g,  --gopath [path]            prepend new path to env var GOPATH
- -a,  --archive-server           Install the archive server
  -u,  --hook-url [url]           Git hook URL
  -o,  --hook-name [name]         Git hook name
  -e,  --env [key] [value]        Set environment variable for git user in the VM
- -k,  --aws-access-key [key]     Set the AWS access key
- -s,  --aws-secret-key [key]     Set the AWS secret key
  -r,  --ext-repository [repo]    Set the external repository URL produced by tsuru/tsuru-deb
  -d,  --docker-only              Only install docker          (default: docker, dashboard)
  -w,  --without-dashboard        Install without dashboard    (default: with dashboard)
@@ -889,9 +794,6 @@ while [ "${1-}" != "" ]; do
                 export GOPATH=$1
             fi
             ;;
-        "-a" | "--archive-server")
-            install_archive_server=1
-            ;;
         "-u" | "--hook-url")
             shift
             hook_url=$1
@@ -904,14 +806,6 @@ while [ "${1-}" != "" ]; do
             shift
             git_envs=("${git_envs[@]}" "$1=\"$2\"")
             shift
-            ;;
-        "-k" | "--aws-access-key")
-            shift
-            aws_access_key=$1
-            ;;
-        "-s" | "--aws-secret-key")
-            shift
-            aws_secret_key=$1
             ;;
         "-r" | "--ext-repository")
             shift
