@@ -375,7 +375,8 @@ function install_go {
         sudo apt-add-repository ppa:gophers/archive -y
         sudo apt-get update
         sudo apt-get install golang-1.8 -y
-        echo -e "export PATH=$PATH:/usr/lib/go-1.8/bin/" |  tee -a ~/.bashrc > /dev/null
+        echo -e "export PATH=$PATH:/usr/lib/go-1.8/bin" |  tee -a ~/.bashrc > /dev/null
+        export PATH=$PATH:/usr/lib/go-1.8/bin
     fi
     if [[ ${GOPATH-} == "" ]]; then
         export GOPATH=$HOME/go
