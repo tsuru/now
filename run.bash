@@ -372,9 +372,9 @@ function install_go {
         echo "Skipping go installation, version installed: $iversion"
     else
         echo "Installing go..."
-        sudo apt-add-repository ppa:ubuntu-lxc/lxd-stable -y
+        sudo apt-add-repository ppa:gophers/archive -y
         sudo apt-get update
-        sudo apt-get install golang -y
+        sudo apt-get install golang-1.8 -y
     fi
     if [[ ${GOPATH-} == "" ]]; then
         export GOPATH=$HOME/go
