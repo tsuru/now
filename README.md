@@ -1,4 +1,4 @@
-# Tsuru Now for Debian 
+# Tsuru Now fix for Debian 
 
 This script is a fork of original project Tsuru Now. 
 
