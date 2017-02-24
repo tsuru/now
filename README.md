@@ -1,3 +1,16 @@
+# Tsuru Now fix for Debian 
+
+This script is a fork of original project Tsuru Now. 
+
+Issues solved:
+
+- Sudo not found, in clean distros
+- Repository of Gandalf-Server not found
+- TSURU_TOKEN wrong for Gandalf-Server
+- Target error after reboot. Example: "Error: Failed to connect to tsuru server (ip_host:8080), it's probably down."
+
+Tested over Debian Jessie (8.7.1)
+
 # Tsuru Now
 
 Yet another script to install tsuru and its dependencies on Ubuntu or Debian distros.

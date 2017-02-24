@@ -32,6 +32,7 @@ hook_url=https://raw.githubusercontent.com/tsuru/tsuru/master/misc/git-hooks/pre
 hook_name=pre-receive
 git_envs=(A=B)
 ext_repository=""
+pass_rsa="" #If you have already generated any in ~/.ssh/id_rsa, put your password here
 export DEBIAN_FRONTEND=noninteractive
 
 declare -A DISTMAP=(
@@ -222,7 +223,7 @@ function check_tsuru_admin {
     set +e
     tsuru-admin pool-add > /dev/null
     if [ $? -ne 0 ]; then
-      tsuru_admin="tsuru"
+      tsuru_admin="tsuru-admin"
     fi
     set -e
 }
@@ -245,11 +246,21 @@ function check_support {
 function install_basic_deps {
     local tsuru_ppa_source=$1
     echo "Updating apt-get and installing basic dependencies (this could take a while)..."
+    
+	#Install Sudo
+	set +eu
+	which sudo > /dev/null
+    if [ $? -ne 0 ]; then
+        echo "Error: sudo should be available on the system. Installing..."
+		apt-get --yes install sudo
+    fi
+	set -eu
+	
     if [[ $distid == "Debian" && $release > 7 && $release < 8 ]]; then
-        if ! apt-cache policy | grep "l=Debian Backports" > /dev/null; then
-            echo 'deb http://http.debian.net/debian wheezy-backports main contrib non-free' | sudo tee /etc/apt/sources.list.d/backports.list
-        fi
-        sudo apt-get update -qq
+	if ! apt-cache policy | grep "l=Debian Backports" > /dev/null; then
+         echo 'deb http://http.debian.net/debian wheezy-backports main contrib non-free' | sudo tee /etc/apt/sources.list.d/backports.list
+	fi
+		sudo apt-get update -qq
         sudo apt-get install virtualbox-guest-utils virtualbox-guest-dkms \
                              linux-image-amd64 linux-headers-amd64 \
                              -qqy -t wheezy-backports
@@ -344,7 +355,19 @@ function install_planb {
 }
 
 function install_gandalf {
-    sudo apt-get install gandalf-server -y
+	set +eu
+    sudo apt-get update -qq
+	sudo apt-get install gandalf-server -y
+
+	#Repo for gandalf-server
+	if [ $? -ne 0 ]; then
+	sudo echo "deb http://ppa.launchpad.net/tsuru/snapshots/ubuntu trusty main" >> /etc/apt/sources.list
+	sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3B0153D0383F073D
+	sudo apt-get update -qq
+	sudo apt-get install gandalf-server -y
+	fi	
+	set -eu
+	
     local hook_dir=/home/git/bare-template/hooks
     sudo mkdir -p $hook_dir
     sudo curl -sSL ${hook_url} -o ${hook_dir}/${hook_name}
@@ -430,7 +453,7 @@ function enable_initial_user {
         echo -e "Host ${private_ip}\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
     fi
     if [[ ! -e ~/.ssh/id_rsa ]]; then
-        yes | ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa > /dev/null
+        yes | ssh-keygen -t rsa -b 4096 -N "$pass_rsa" -f ~/.ssh/id_rsa > /dev/null
     fi
     tsuru key-add -f rsa ~/.ssh/id_rsa.pub || true
 }
@@ -474,7 +497,7 @@ function install_platform {
 function install_dashboard {
     echo "Installing tsuru-dashboard..."
     tsuru app-create tsuru-dashboard python -o $pool -t admin || true
-    pushd ~/
+	pushd ~/
     if [[ ! -d ~/tsuru-dashboard ]]; then
         git clone https://github.com/tsuru/tsuru-dashboard
     fi
@@ -536,12 +559,12 @@ function install_tsuru_src {
 }
 
 function config_git_key {
-    local tsuru_token=$(bash -ic 'source ~git/.bash_profile && echo $TSURU_TOKEN')
-    if [[ $tsuru_token == "" ]]; then
-        echo "Adding tsurud token to ~git/.bash_profile"
-        local token=$(tsurud token || tsr token)
-        echo "export TSURU_TOKEN=$token" | sudo tee -a ~git/.bash_profile > /dev/null
-    fi
+    # local tsuru_token=$(bash -ic 'source ~git/.bash_profile && echo $TSURU_TOKEN')
+    # if [[ $tsuru_token == "" ]]; then
+        # echo "Adding tsurud token to ~git/.bash_profile"
+        # local token=$(tsurud token || tsr token)
+        # echo "export TSURU_TOKEN=$token" | sudo tee -a ~git/.bash_profile > /dev/null
+    # fi
     local tsuru_host=$(bash -ic 'source ~git/.bash_profile && echo $TSURU_HOST')
     if [[ $tsuru_host != "$private_ip:8080" ]]; then
         echo "Adding tsurud host to ~git/.bash_profile"
@@ -555,6 +578,25 @@ function add_git_envs {
         echo "Serializing provided env vars to ~git/.bash_profile"
         echo export ${git_envs[@]:1} | sudo tee -a ~git/.bash_profile > /dev/null
     fi
+}
+
+function target_tsuru_solve {
+    set +eu
+	curl -sSL https://raw.githubusercontent.com/caionaweb/now/master/tsuru-target.sh -o /etc/init.d/tsuru-target.sh
+	crontab -l > /tmp/cron_tmp
+	echo "@reboot  echo /etc/init.d/tsuru-target.sh | at now + 1 minutes" >> /tmp/cron_tmp
+	crontab /tmp/cron_tmp
+	rm /tmp/cron_tmp
+	set -eu
+}
+
+function token_gandalf {
+	#Change TSURU_TOKEN gandalf profile
+	set +eu
+	sed -i '/TSURU_TOKEN/d' ~git/.bash_profile
+	token=$(tsuru token-show | awk -F ": " '"API key" {print $2}')
+	echo "export TSURU_TOKEN="$token >> ~git/.bash_profile
+	set -eu    
 }
 
 function install_all {
@@ -587,6 +629,8 @@ function install_all {
     add_default_roles
     add_as_docker_node
     install_platform python
+	target_tsuru_solve
+	token_gandalf
     if [[ ${without_dashboard-} != "1" ]]; then
         install_dashboard
     fi
@@ -633,8 +677,8 @@ function install_server {
     add_default_roles
     add_as_docker_node
     install_platform python
-
-    echo '######################## DONE! ########################'
+	
+	echo '######################## DONE! ########################'
     echo
     echo "Some information about your tsuru installation:"
     echo
