@@ -290,7 +290,7 @@ function install_docker {
         echo "Installing docker..."
         curl -sSL https://get.docker.com/ | sudo sh
     fi
-    if [[ `systemctl is-system-running` =~ running ]]; then
+    if [[ `systemctl is-system-running` != "offline" ]]; then
         sudo -E sh -c "mkdir -p /etc/systemd/system/docker.service.d"
         sudo -E sh -c "echo '[Service]\nExecStart=\nExecStart=/usr/bin/dockerd \$DOCKER_OPTS -H tcp://127.0.0.1:${dockerport} -H unix:///var/run/docker.sock --insecure-registry=${registryhost}:${registryport}' > /etc/systemd/system/docker.service.d/tsuru.conf"
         sudo systemctl daemon-reload
