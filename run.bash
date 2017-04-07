@@ -236,8 +236,8 @@ function check_support {
     distid=$(lsb_release -is)
     release=$(lsb_release -rs)
     codename=$(lsb_release -cs)
-    if [[ $distid == "Debian" && $(echo $release | awk '{printf("%d", $1)}') -lt 7  ]]; then
-        error "Error: This script requires Debian release >= 7"
+    if [[ $distid == "Debian" && $(echo $release | awk '{printf("%d", $1)}') -lt 8  ]]; then
+        error "Error: This script requires Debian release >= 8"
     fi
     echo "Detect ${distid} ${release} (${codename}), supported system"
 }
@@ -245,15 +245,6 @@ function check_support {
 function install_basic_deps {
     local tsuru_ppa_source=$1
     echo "Updating apt-get and installing basic dependencies (this could take a while)..."
-    if [[ $distid == "Debian" && $release > 7 && $release < 8 ]]; then
-        if ! apt-cache policy | grep "l=Debian Backports" > /dev/null; then
-            echo 'deb http://http.debian.net/debian wheezy-backports main contrib non-free' | sudo tee /etc/apt/sources.list.d/backports.list
-        fi
-        sudo apt-get update -qq
-        sudo apt-get install virtualbox-guest-utils virtualbox-guest-dkms \
-                             linux-image-amd64 linux-headers-amd64 \
-                             -qqy -t wheezy-backports
-    fi
     if [[ $distid == "Ubuntu" ]]; then
         sudo perl -i -pe 's/^# *(.+)(trusty|trusty-updates|trusty-security) multiverse$/$1$2 multiverse/gi' /etc/apt/sources.list
         sudo apt-get update
