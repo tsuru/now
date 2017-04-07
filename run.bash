@@ -548,6 +548,16 @@ function add_git_envs {
     fi
 }
 
+function banner_ansii {
+    echo -e '                            \x1B[38;2;37;184;108mo.                   \x1B[0m'
+    echo -e '  _                         \x1B[38;2;37;184;108m:8o.             .:: \x1B[0m'
+    echo -e ' | |_ ___ _   _ _ __ _   _  \x1B[38;2;37;184;108m.888o         .o:  . \x1B[0m'
+    echo -e ' | __/ __| | | | \047__| | | |  \x1B[38;2;37;184;108mO888O:     .oO:     \x1B[0m'
+    echo -e ' | |_\__ \ |_| | |  | |_| |  \x1B[38;2;37;184;108mO88888O. :O8O.      \x1B[0m'
+    echo -e '  \__|___/\__,_|_|   \__,_|  \x1B[38;2;37;184;108mO8888888OoOo        \x1B[0m'
+    echo -e '                            \x1B[38;2;37;184;108m.O88888888o:         \x1B[0m'
+}
+
 function install_all {
     check_support
     install_basic_deps ${tsuru_ppa_source-"stable"}
@@ -583,6 +593,8 @@ function install_all {
     fi
 
     echo '######################## DONE! ########################'
+    echo
+    banner_ansii
     echo
     echo "Some information about your tsuru installation:"
     echo
@@ -627,6 +639,8 @@ function install_server {
 
     echo '######################## DONE! ########################'
     echo
+    banner_ansii
+    echo
     echo "Some information about your tsuru installation:"
     echo
     echo "Admin user: ${adminuser}"
@@ -648,6 +662,8 @@ function install_client {
     fi
 
     echo '######################## DONE! ########################'
+    echo
+    banner_ansii
     echo
     echo "Some information about your tsuru installation:"
     echo
