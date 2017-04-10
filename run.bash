@@ -246,8 +246,8 @@ function install_basic_deps {
         curl -sS ${ext_repository}/public.key | sudo apt-key add -
         echo "deb ${ext_repository} ${DISTMAP[$codename]} main contrib" | sudo tee /etc/apt/sources.list.d/tsuru-deb.list
         echo "deb-src ${ext_repository} ${DISTMAP[$codename]} main contrib" | sudo tee -a /etc/apt/sources.list.d/tsuru-deb.list
-    fi
-        curl -s https://packagecloud.io/install/repositories/tsuru/stable/script.deb.sh | sudo bash
+    else
+        curl -s https://packagecloud.io/install/repositories/tsuru/${tsuru_package_source}/script.deb.sh | sudo bash
     fi
     sudo apt-get update
 }
