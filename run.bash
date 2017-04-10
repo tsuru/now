@@ -15,7 +15,6 @@ set_interface=""
 is_debug=""
 docker_node=""
 set_interface=""
-tsuru_admin="tsuru-admin"
 install_func=install_all
 pool="theonepool"
 mongohost="127.0.0.1"
@@ -27,7 +26,7 @@ registryport="5000"
 adminuser="admin@example.com"
 adminpassword="admin123"
 install_tsuru_source=0
-tsuru_ppa_source="stable"
+tsuru_package_source="stable"
 hook_url=https://raw.githubusercontent.com/tsuru/tsuru/master/misc/git-hooks/pre-receive
 hook_name=pre-receive
 git_envs=(A=B)
@@ -218,15 +217,6 @@ function set_local_host {
     fi
 }
 
-function check_tsuru_admin {
-    set +e
-    tsuru-admin pool-add > /dev/null
-    if [ $? -ne 0 ]; then
-      tsuru_admin="tsuru"
-    fi
-    set -e
-}
-
 function check_support {
     which apt-get > /dev/null
     if [ $? -ne 0 ]; then
@@ -243,28 +233,21 @@ function check_support {
 }
 
 function install_basic_deps {
-    local tsuru_ppa_source=$1
+    local tsuru_package_source=$1
     echo "Updating apt-get and installing basic dependencies (this could take a while)..."
     if [[ $distid == "Ubuntu" ]]; then
         sudo perl -i -pe 's/^# *(.+)(trusty|trusty-updates|trusty-security) multiverse$/$1$2 multiverse/gi' /etc/apt/sources.list
-        sudo apt-get update
-        sudo apt-get install linux-image-extra-$(uname -r) -qqy
     fi
+    sudo apt-get update
+    sudo apt-get install linux-image-extra-$(uname -r) -qqy
     sudo apt-get install jq screen curl mercurial git bzr \
                          software-properties-common apt-transport-https -y
     if [[ $ext_repository ]]; then
         curl -sS ${ext_repository}/public.key | sudo apt-key add -
         echo "deb ${ext_repository} ${DISTMAP[$codename]} main contrib" | sudo tee /etc/apt/sources.list.d/tsuru-deb.list
         echo "deb-src ${ext_repository} ${DISTMAP[$codename]} main contrib" | sudo tee -a /etc/apt/sources.list.d/tsuru-deb.list
-    elif [[ $distid == "Ubuntu" ]]; then
-        if ! apt-cache policy | grep "l=tsuru-deb" > /dev/null; then
-            sudo apt-add-repository ppa:tsuru/ppa -y >/dev/null 2>&1
-            if [[ $tsuru_ppa_source == "nightly" ]]; then
-                sudo apt-add-repository ppa:tsuru/snapshots -y >/dev/null 2>&1
-            fi
-        fi
-    else
-        error "PPA is only available in Ubuntu, please run with --ext-repository <repo>"
+    fi
+        curl -s https://packagecloud.io/install/repositories/tsuru/stable/script.deb.sh | sudo bash
     fi
     sudo apt-get update
 }
@@ -400,9 +383,9 @@ function config_tsuru_pre {
 }
 
 function config_tsuru_post {
-    $tsuru_admin target-remove default
-    $tsuru_admin target-add default "${private_ip}:8080" || true
-    $tsuru_admin target-set default
+    tsuru target-remove default
+    tsuru target-add default "${private_ip}:8080" || true
+    tsuru target-set default
 }
 
 function create_initial_user {
@@ -439,16 +422,16 @@ function add_default_roles {
 
 function add_as_docker_node {
     echo "Adding docker node to pool..."
-    $tsuru_admin pool-add $pool -p -d 2>/dev/null || $tsuru_admin pool-add $pool 2>/dev/null || true
+    tsuru pool-add $pool -p -d 2>/dev/null || tsuru pool-add $pool 2>/dev/null || true
     amount=0
     for node in $docker_node; do
-        $tsuru_admin docker-node-add --register address="http://${node}" pool=$pool 2>/dev/null || true
+        tsuru node-add --register address="http://${node}" pool=$pool 2>/dev/null || true
         amount=$((amount+1))
     done
     set +e
     status=1
     while [ $status != 0 ]; do
-        $tsuru_admin docker-node-list | grep "| http://" | grep ready | wc -l | grep -q "${amount}$"
+        tsuru node-list | grep "| http://" | grep ready | wc -l | grep -q "${amount}$"
         status=$?
     done
     set -e
@@ -458,7 +441,7 @@ function install_platform {
     echo "Installing platform container..."
     local has_plat=$((tsuru platform-list | grep "${1}"$) || true)
     if [[ ${has_plat} == "" ]]; then
-        $tsuru_admin platform-add ${1} -i "tsuru/${1}"
+        tsuru platform-add ${1} -i "tsuru/${1}"
     fi
 }
 
@@ -481,7 +464,7 @@ function install_dashboard {
 
 function install_tsuru_pkg {
     echo "Installing Tsuru from deb package..."
-    sudo apt-get install tsuru-server tsuru-admin tsuru-client -y
+    sudo apt-get install tsuru-server tsuru-client -y
 
     sudo service tsuru-server-api stop >/dev/null 2>&1 || true
     config_tsuru_pre
@@ -491,8 +474,8 @@ function install_tsuru_pkg {
 }
 
 function install_tsuru_client {
-    echo "Installing Tsuru admin & client from deb package..."
-    sudo apt-get install tsuru-admin tsuru-client -qqy
+    echo "Installing Tsuru client from deb package..."
+    sudo apt-get install tsuru-client -qqy
 }
 
 function install_tsuru_src {
@@ -508,12 +491,8 @@ function install_tsuru_src {
         popd
     fi
     go get github.com/tsuru/tsuru/cmd/tsurud
-    go get -d github.com/tsuru/tsuru-admin
     go get github.com/tsuru/tsuru-client/tsuru
-    sed "s/0\.4\.3/0.5.0/g" -i $(echo "${GOPATH}" | awk -F ':' '{print $1}')/src/github.com/tsuru/tsuru-admin/main.go
-    go install github.com/tsuru/tsuru-admin
-    sed "s/0\.5\.0/0.4.3/g" -i $(echo "${GOPATH}" | awk -F ':' '{print $1}')/src/github.com/tsuru/tsuru-admin/main.go
-    sudo cp $(echo "${GOPATH}" | awk -F ':' '{print $1}')/bin/{tsurud,tsuru-admin,tsuru} /usr/local/bin
+    sudo cp $(echo "${GOPATH}" | awk -F ':' '{print $1}')/bin/{tsurud,tsuru} /usr/local/bin
 
     screen -X -S api quit || true
     screen -S api -d -m tsurud api --config=/etc/tsuru/tsuru.conf
@@ -560,7 +539,7 @@ function banner_ansii {
 
 function install_all {
     check_support
-    install_basic_deps ${tsuru_ppa_source-"stable"}
+    install_basic_deps ${tsuru_package_source-"stable"}
     set_local_host
     set_host
     install_docker
@@ -579,7 +558,6 @@ function install_all {
     else
         install_tsuru_pkg
     fi
-    check_tsuru_admin
     config_tsuru_post
     config_git_key
     add_git_envs
@@ -616,7 +594,7 @@ function install_all {
 
 function install_server {
     check_support
-    install_basic_deps ${tsuru_ppa_source-"stable"}
+    install_basic_deps ${tsuru_package_source-"stable"}
     set_local_host
     set_host
     install_docker
@@ -650,7 +628,7 @@ function install_server {
 
 function install_client {
     check_support
-    install_basic_deps ${tsuru_ppa_source-"stable"}
+    install_basic_deps ${tsuru_package_source-"stable"}
     set_local_host
     set_host
     install_tsuru_client
@@ -686,7 +664,7 @@ function install_client {
 
 function install_dockerfarm {
     check_support
-    install_basic_deps ${tsuru_ppa_source-"stable"}
+    install_basic_deps ${tsuru_package_source-"stable"}
     set_local_host
     set_host
     dockerhost=$(local_ip)
@@ -734,7 +712,7 @@ Options:
                                  - dockerfarm: install docker only
                                  - server: install mongo, planb, gandalf, archiver, tsuru-server
                                    and their dependencies
-                                 - client: install tsuru-admin, tsuru-client and their dependencies
+                                 - client: install tsuru-client and their dependencies
  -v,  --verbose                  Print debug messages
  -P,  --docker-pool [name]       Add docker to destination pool of tsuru (default: theonepool)
  -R,  --registryhost             Set the docker registry IP
@@ -783,11 +761,7 @@ while [ "${1-}" != "" ]; do
             install_tsuru_source=1
             ;;
         "-p" | "--tsuru-pkg-stable")
-            tsuru_ppa_source="stable"
-            install_tsuru_pkg=1
-            ;;
-        "-N" | "--tsuru-pkg-nightly")
-            tsuru_ppa_source="nightly"
+            tsuru_package_source="stable"
             install_tsuru_pkg=1
             ;;
         "-f" | "--force-install")
