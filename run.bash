@@ -466,9 +466,9 @@ function install_tsuru_pkg {
     echo "Installing Tsuru from deb package..."
     sudo apt-get install tsuru-server tsuru-client -y
 
-    sudo service tsuru-server-api stop >/dev/null 2>&1 || true
+    sudo service tsurud stop >/dev/null 2>&1 || true
     config_tsuru_pre
-    sudo service tsuru-server-api start
+    sudo service tsurud start
 
     sleep 5
 }
