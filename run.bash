@@ -1,6 +1,6 @@
 #!/bin/bash -ue
 
-# Copyright 2016 tsuru-now authors. All rights reserved.
+# Copyright 2017 tsuru-now authors. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
@@ -199,8 +199,8 @@ function set_host {
 
     if [[ $host_name == "" ]]; then
         host_name="$host_ip.nip.io"
-        echo "$host_ip $host_name" | sudo tee -a /etc/hosts
     fi
+    echo "$host_ip $host_name" | sudo tee -a /etc/hosts
     echo "Chosen host name: $host_name. You can override with --host-name <hostname>"
 }
 
