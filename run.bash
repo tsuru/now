@@ -566,6 +566,7 @@ function install_all {
     add_default_roles
     add_as_docker_node
     install_platform python
+    install_platform static
     if [[ ${without_dashboard-} != "1" ]]; then
         install_dashboard
     fi
