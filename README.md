@@ -1,3 +1,7 @@
+# INSTALL
+
+`now` script will be *deprecated* soon and the installation with the purpose of test tsuru and/or for development, you can use [installer](https://docs.tsuru.io/master/experimental/installer.html) to have tsuru up and running. Installer is an experimental feature.
+
 # Tsuru Now
 
 Yet another script to install tsuru and its dependencies on Ubuntu or Debian distros.
