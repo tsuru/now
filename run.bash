@@ -138,6 +138,11 @@ function public_ip {
     # Try to take the public IP using AWS EC2's metadata API:
     local ip=$(curl -s -L -m2 -f http://169.254.169.254/latest/meta-data/public-ipv4 || true)
 
+    # Try to use Google Cloud Platform's metadata API as fallback:
+    if [[ "$ip" == "" || "$ip" == "not found" ]]; then
+        ip=$(curl -s -L -m2 -f -H 'Metadata-Flavor: Google' http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip || true)
+    fi
+
     # Try to use DigitalOcean's metadata API as fallback:
     if [[ "$ip" == "" || "$ip" == "not found" ]]; then
         ip=$(curl -s -L -m2 -f http://169.254.169.254/metadata/v1/interfaces/public/0/ipv4/address || true)
@@ -174,6 +179,11 @@ function public_ip {
 function local_ip {
     # Try to take the public IP using AWS EC2's metadata API:
     local ip=$(curl -s -L -m2 -f http://169.254.169.254/latest/meta-data/local-ipv4 || true)
+
+    # Try to use GoogleCloudPlatform's metadata API as fallback:
+    if [[ "$ip" == "" || "$ip" == "not found" ]]; then
+        ip=$(curl -s -L -m2 -f -H 'Metadata-Flavor: Google' http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip || true)
+    fi
 
     # Try to use DigitalOcean's metadata API as fallback:
     if [[ "$ip" == "" || "$ip" == "not found" ]]; then
