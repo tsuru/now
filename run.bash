@@ -148,6 +148,9 @@ function public_ip {
         ip=$(get_inet_addr eth)
     fi
     if [[ "$ip" == "" || "$ip" == "not found" ]]; then
+        ip=$(get_inet_addr ens)
+    fi
+    if [[ "$ip" == "" || "$ip" == "not found" ]]; then
         ip=$(get_inet_addr venet0)
     fi
     if [[ "$ip" == "" || "$ip" == "not found" ]]; then
